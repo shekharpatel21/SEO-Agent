@@ -151,7 +151,7 @@ export default function ChatInterface() {
         <div className="flex items-center gap-3 sm:gap-4 shrink-0">
           <ApiKeySetup />
           <a
-            href="https://github.com"
+            href="https://github.com/shekharpatel21/SEO-Agent"
             target="_blank"
             rel="noopener noreferrer"
             className="text-gray-400 hover:text-gray-600 transition-colors"
