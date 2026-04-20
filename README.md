@@ -395,6 +395,32 @@ FRONTEND_PORT=3000
 
 ---
 
+## Deployment
+
+This project requires a **long-lived Node process** for the bot adapters. Slack uses Socket Mode (WebSocket), Discord uses the Gateway (WebSocket), Telegram uses long-polling, and the embedded Next.js frontend is spawned as a child process — none of which work on serverless platforms.
+
+### ✅ Hosts that work
+
+- **Any Linux VPS** — DigitalOcean, Linode, Hetzner, AWS EC2, etc. with `node 20+` and `pm2` or `systemd`
+- **Docker / Docker Compose** — `docker compose up` works out of the box (the repo includes a [Dockerfile](./Dockerfile) and [docker-compose.yml](./docker-compose.yml))
+- **PaaS providers that support persistent Node processes** — anything that runs `npm install && npm start` and keeps the process alive
+- **Your own machine** — `npm install && npm start`
+
+### ❌ Hosts that DON'T work
+
+- **Vercel, Netlify, Cloudflare Workers, AWS Lambda, Google Cloud Functions** — any serverless platform
+  - Functions die after each request (max 10s on free tiers, 5 min on paid)
+  - Cannot hold WebSocket connections to Slack/Discord
+  - Cannot keep long-polling Telegram
+  - Cannot spawn child processes that outlive the request
+  - In-memory state (activity log, rate limits) resets on every cold start
+
+### Web-UI-only deployment
+
+If you only want the chat UI **without** any bot adapters, you can deploy just the `frontend/` folder to Vercel. That gives you the chat page and the `/api/chat` + `/api/export-pdf` endpoints, but no Slack/Discord/Telegram/WhatsApp/Email/widget/`/admin`/`/health`/`/api/message` — those all live in the bot server.
+
+---
+
 ## Tech stack
 
 Node 20+, Express, Next.js 14, Tailwind CSS, DataForSEO / SEMrush / Ahrefs, OpenAI / Gemini / Anthropic SDKs, Slack / Discord / Telegram / Bot Framework SDKs, optional Playwright for JS-rendered scraping.
