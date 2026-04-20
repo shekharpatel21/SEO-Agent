@@ -8,7 +8,9 @@
     "start": "node bot-server.js",
     "dev": "node --watch bot-server.js",
     "cli": "node adapters/cli.js",
-    "start:slack-only": "node slack-bot.js"
+    "start:slack-only": "node slack-bot.js",
+    "postinstall": "npm install --prefix frontend",
+    "build:frontend": "npm run build --prefix frontend"
   },
   "dependencies": {
     "@slack/socket-mode": "^2.0.6",

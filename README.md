@@ -1,81 +1,38 @@
-# SEO Keyword Agent
+# SEO Agent
 
-Open-source, self-hostable SEO keyword research AI agent with a **multi-platform bot backend**. Ask a question from Slack, Discord, Telegram, Microsoft Teams, WhatsApp, email, a web widget, the CLI, or any HTTP client — get back a structured SEO report with keyword ideas, SERP analysis, competitor insight, and a styled PDF.
+Source-available, self-hostable SEO research AI agent with a multi-platform bot backend. Free for personal, educational, and research use. Ask a question from Slack, Discord, Telegram, Microsoft Teams, WhatsApp, email, a web widget, the CLI, or any HTTP client — get back a structured SEO report with keyword ideas, SERP analysis, competitor insight, and a styled PDF.
 
-Deploy on Vercel for free, plug in your own API keys, run the bot server anywhere Node runs. No SaaS subscription, no vendor lock-in.
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-orange.svg)](./LICENSE)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/seo-keyword-agent)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-
----
-
-## Table of contents
-
-- [Features](#features)
-- [Architecture](#architecture)
-- [Quick start](#quick-start)
-- [Required API keys](#required-api-keys)
-- [Multi-platform bot backend](#multi-platform-bot-backend)
-  - [Supported platforms](#supported-platforms)
-  - [Starting the bot server](#starting-the-bot-server)
-  - [Platform setup](#platform-setup)
-    - [Slack](#slack)
-    - [Discord](#discord)
-    - [Telegram](#telegram)
-    - [Microsoft Teams](#microsoft-teams)
-    - [WhatsApp (Twilio)](#whatsapp-twilio)
-    - [Email (SMTP in/out)](#email-smtp-inout)
-    - [Web widget](#web-widget)
-    - [Generic HTTP webhook](#generic-http-webhook)
-    - [CLI](#cli)
-- [Endpoints reference](#endpoints-reference)
-- [Configuration reference](#configuration-reference)
-- [Security](#security)
-- [Observability](#observability)
-- [Deployment](#deployment)
-- [Adding a new platform](#adding-a-new-platform)
-- [Web scraper (internal links)](#web-scraper-internal-links)
-- [Backend API routes](#backend-api-routes)
-- [Tech stack](#tech-stack)
-- [Contributing](#contributing)
-- [License](#license)
+> **Free for personal, educational, and research use.** Commercial use, hosted SaaS, and any revenue-generating activity require a separate license — see [LICENSE](./LICENSE) or contact [shekharpatel2221@gmail.com](mailto:shekharpatel2221@gmail.com).
 
 ---
 
 ## Features
 
-### SEO research
-- **Keyword Ideas** — search volume, difficulty, CPC, and intent from DataForSEO
-- **SERP Analysis** — top-ranking pages for any query
-- **Related Keywords** — variations and long-tails
-- **Competitor Keywords** — see what any domain ranks for
-- **AI Mode** — enriched keyword data with monthly trends
-- **Internal Links** — built-in scraper (fetch mode + optional Playwright)
-- **AI Reports** — structured analysis from OpenAI, Gemini, or Claude
-- **PDF Export** — styled report PDF auto-generated per query
-
-### Multi-platform bot
-- **8 adapters out of the box** — Slack, Discord, Telegram, Teams, WhatsApp, Email, Web widget, CLI, plus a generic HTTP endpoint
+- **Keyword ideas, SERP analysis, related & competitor keywords** — powered by your choice of DataForSEO, SEMrush, or Ahrefs
+- **AI-generated reports** — pick OpenAI, Gemini, or Anthropic
+- **Styled PDF export** — auto-generated per query
+- **8 bot adapters** — Slack, Discord, Telegram, MS Teams, WhatsApp, Email, Web widget, CLI, plus a generic HTTP webhook
 - **Auto-enable** — each adapter activates only when its env vars are set
-- **One shared core** — add a new platform in ~50 lines without touching the others
-- **Embed on any site** — drop-in `<script src="…/widget.js">`
-
-### Production-ready
-- API key auth + sliding-window rate limiting on public endpoints
-- Graceful shutdown (SIGINT/SIGTERM)
-- `/health` probe with per-adapter status
-- `/admin` dashboard with live activity log
-- JSONL audit log (optional, file-backed)
-- Dockerfile + docker-compose included
+- **Built-in web scraper** — fetch mode + optional Playwright for JS-rendered sites
+- **Production-ready** — API key auth, rate limiting, `/health` probe, `/admin` dashboard, graceful shutdown
 
 ---
 
-## Architecture
+## How it works
+
+The repo ships two pieces that boot together with one command:
+
+- **`frontend/`** — a Next.js app exposing the chat UI and the SEO logic at `/api/chat` and `/api/export-pdf`
+- **`bot-server.js`** — a Node process running every adapter (Slack/Discord/Telegram/etc.). Each adapter forwards user queries to the frontend's `/api/chat` and returns the report
+
+`npm start` spawns both — adapters on `:4000`, the embedded Next.js on `:3000`.
 
 ```
                       ┌──────────────────────────────────────────────┐
                       │             Next.js frontend                 │
-                      │    (chat UI, keyword research, PDF export)   │
+                      │    (chat UI, SEO research, PDF export)       │
                       │        /api/chat   /api/export-pdf   …       │
                       └──────────────────────┬───────────────────────┘
                                              │ HTTP
@@ -87,16 +44,20 @@ Deploy on Vercel for free, plug in your own API keys, run the bot server anywher
               │  + PDF buffer)     │   │ rateLimit.js│
               └─────────▲──────────┘   └─────────────┘
                         │
+                        │   each adapter calls handleQuery()
+                        │
    ┌──────┬──────┬──────┼──────┬──────┬──────┬──────┬──────┐
    │      │      │      │      │      │      │      │      │
  Slack  Disc. Tele.  Teams  W'App Email  Web   HTTP   CLI
-   │      │      │      │      │      │    widget  any    REPL
-   │      │      │      │      │      │     + iframe    │
-   ▼      ▼      ▼      ▼      ▼      ▼      ▼      ▼     ▼
+   │      │      │      │      │      │   widget   any   REPL
+   │      │      │      │      │      │  + iframe        │
+   ▼      ▼      ▼      ▼      ▼      ▼     ▼      ▼     ▼
       adapters/  ▸  each one is a thin translator to/from its platform
-```
 
-Every adapter calls `handleQuery(query, { adapter, user })` and formats the returned `{ report, pdfBuffer, meta, filename }` for its platform. The SEO pipeline lives in **one file** — [core/handler.js](core/handler.js) — so behavior stays consistent across every surface.
+
+    SEO data flows in via one of three providers (pick one with SEO_PROVIDER):
+              DataForSEO   ·   SEMrush   ·   Ahrefs
+```
 
 ---
 
@@ -105,107 +66,99 @@ Every adapter calls `handleQuery(query, { adapter, user })` and formats the retu
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/seo-keyword-agent.git
-cd seo-keyword-agent
+git clone https://github.com/shekharpatel21/SEO-Agent.git
+cd SEO-Agent
 npm install
-cd frontend && npm install && cd ..
 ```
 
-### 2. Configure environment
+A single `npm install` installs both backend and frontend dependencies (the `postinstall` hook handles the frontend).
 
-Copy `.env` and fill in credentials:
+### 2. Configure
+
+Copy `.env.example` to `.env` and fill in credentials:
 
 ```env
-# Required: SEO data provider
+# Required: pick one SEO data provider
+SEO_PROVIDER=dataforseo              # dataforseo | semrush | ahrefs
 DATAFORSEO_USERNAME=your_username
 DATAFORSEO_PASSWORD=your_password
+# or use SEMrush:
+# SEMRUSH_API_KEY=...
+# or use Ahrefs:
+# AHREFS_API_TOKEN=...
 
 # Pick one AI provider
 AI_PROVIDER=gemini
 AI_MODEL=gemini-2.5-flash
 GEMINI_API_KEY=...
-
-# Bot server port (default 4000)
-BOT_SERVER_PORT=4000
 ```
 
-All other env vars are optional and documented in [Configuration reference](#configuration-reference).
-
-### 3. Run the frontend (keyword research API)
+### 3. Run
 
 ```bash
-cd frontend
-npm run dev
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — you get the chat UI and the `/api/chat` + `/api/export-pdf` backend routes the bot server calls.
+You'll see which adapters connected and which were skipped for missing credentials. Open [http://localhost:3000](http://localhost:3000) for the chat UI, or use one of the bot adapters.
 
-### 4. Run the bot server
+> **Note:** The chat UI lives at the root URL — `http://localhost:3000`. The path `/api/chat` is a **POST-only** internal endpoint that bot adapters call; visiting it in a browser shows a 404, which is expected.
 
-In a second terminal:
+For a no-token quick test:
 
 ```bash
-npm start            # all enabled adapters
-# or
-npm run cli          # local CLI REPL only (no tokens needed)
+npm run cli
 ```
 
-You'll see which adapters came online and which were skipped for missing credentials.
+---
+
+## Commands
+
+All commands are run from the root of the project, from a terminal:
+
+| Command | Action |
+|---|---|
+| `npm install` | Install backend + frontend dependencies (postinstall installs frontend deps automatically) |
+| `npm start` | Start everything — backend on `:4000` + embedded Next.js on `:3000` |
+| `npm run dev` | Same as `start`, with auto-restart on file changes (`node --watch`) |
+| `npm run cli` | Interactive CLI REPL — zero tokens needed, instant local testing |
+| `npm run build:frontend` | Production build of the Next.js app (use with `BOT_FRONTEND_MODE=start`) |
+| `npm run start:slack-only` | Legacy single-platform Slack-only entry (still works) |
+| `docker compose up` | Run the whole stack containerized |
 
 ---
 
 ## Required API keys
 
-| Service | Required | Free tier | Get it at |
-|---|---|---|---|
-| DataForSEO | Yes | Trial credits | [dataforseo.com](https://dataforseo.com) |
-| OpenAI | Pick one | Paid only | [platform.openai.com](https://platform.openai.com) |
-| Google Gemini | Pick one | Generous free tier | [aistudio.google.com](https://aistudio.google.com/app/apikey) |
-| Anthropic Claude | Pick one | Credits available | [console.anthropic.com](https://console.anthropic.com) |
+| Service | Required | Get it at |
+|---|---|---|
+| DataForSEO / SEMrush / Ahrefs | Pick one (SEO data) | [dataforseo.com](https://dataforseo.com) · [semrush.com](https://www.semrush.com) · [ahrefs.com](https://ahrefs.com) |
+| OpenAI / Gemini / Anthropic | Pick one (AI provider) | [openai.com](https://platform.openai.com) · [aistudio.google.com](https://aistudio.google.com/app/apikey) · [anthropic.com](https://console.anthropic.com) |
 
-Platform bot tokens (Slack / Discord / Telegram / Teams / Twilio / SMTP) are only needed if you want *that specific platform*. The system ships nine adapters — enable as many or as few as you like.
+Bot tokens (Slack / Discord / Telegram / Teams / Twilio / SMTP) are only required if you want that specific platform.
 
 ---
 
-## Multi-platform bot backend
+## Supported bot platforms
 
-### Supported platforms
+| Platform | Transport | Required env vars |
+|---|---|---|
+| **Slack** | WebSocket (Socket Mode) | `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN` |
+| **Discord** | WebSocket (Gateway) | `DISCORD_BOT_TOKEN` |
+| **Telegram** | Long polling | `TELEGRAM_BOT_TOKEN` |
+| **MS Teams** | HTTP (Bot Framework) | `TEAMS_APP_ID`, `TEAMS_APP_PASSWORD` |
+| **WhatsApp** | HTTP (Twilio) | `TWILIO_AUTH_TOKEN`, `BOT_PUBLIC_URL` |
+| **Email** | Inbound webhook + SMTP | `SMTP_HOST`, `SMTP_FROM` |
+| **Web widget** | Embeddable HTML / iframe | *(none)* |
+| **Generic HTTP** | `POST /api/message` | *(none, optional `BOT_API_KEYS`)* |
+| **CLI** | Local REPL | `BOT_CLI_ENABLED=1` |
 
-| Platform       | Transport               | Required env vars                                       |
-|----------------|--------------------------|----------------------------------------------------------|
-| **Slack**      | WebSocket (Socket Mode)  | `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`                    |
-| **Discord**    | WebSocket (Gateway)      | `DISCORD_BOT_TOKEN`                                      |
-| **Telegram**   | Long polling             | `TELEGRAM_BOT_TOKEN`                                     |
-| **MS Teams**   | HTTP (Bot Framework)     | `TEAMS_APP_ID`, `TEAMS_APP_PASSWORD`                    |
-| **WhatsApp**   | HTTP (Twilio)            | `TWILIO_AUTH_TOKEN` (signing), `BOT_PUBLIC_URL`         |
-| **Email**      | Inbound webhook + SMTP   | `SMTP_HOST`, `SMTP_FROM` (plus provider inbound route)  |
-| **Web widget** | Embeddable HTML / iframe | *(none)*                                                 |
-| **Generic HTTP** | `POST /api/message`    | *(none, optionally `BOT_API_KEYS`)*                      |
-| **CLI**        | Local REPL               | `BOT_CLI_ENABLED=1`                                      |
+For even more notes (corner cases, troubleshooting), see [BOT_PLATFORMS.md](./BOT_PLATFORMS.md).
 
-### Starting the bot server
+---
 
-```bash
-npm start              # production
-npm run dev            # auto-restart on file changes
-npm run cli            # interactive CLI only
-docker compose up      # containerized (see Deployment)
-```
+## Platform setup
 
-On startup, the server prints which adapters connected and which it skipped:
-
-```
-▶ bot-server v2 — slack/discord/telegram/teams/whatsapp/email/cli/webhook+widget
-[discord] DISCORD_BOT_TOKEN not set — skipping Discord adapter.
-✓ [whatsapp] mounted POST /api/webhook/whatsapp
-✓ [webhook] mounted /api/message, /health, /api/activity, /admin, /widget
-✓ HTTP adapters listening on :4000
-✓ [slack] connected via Socket Mode.
-```
-
-### Platform setup
-
-#### Slack
+### Slack
 
 Uses Slack Socket Mode (no public URL needed).
 
@@ -224,7 +177,7 @@ Uses Slack Socket Mode (no public URL needed).
 
 **Stop command**: `@YourBotName stop` aborts your in-flight request.
 
-#### Discord
+### Discord
 
 1. Go to [discord.com/developers/applications](https://discord.com/developers/applications) → **New Application**.
 2. **Bot** → Add Bot → copy the token as `DISCORD_BOT_TOKEN`.
@@ -236,7 +189,7 @@ Uses Slack Socket Mode (no public URL needed).
    ```
 6. Mention the bot in a channel, or use `!seo <query>` directly.
 
-#### Telegram
+### Telegram
 
 1. Message **@BotFather** on Telegram → `/newbot`.
 2. Copy the token as `TELEGRAM_BOT_TOKEN`.
@@ -246,7 +199,7 @@ Uses Slack Socket Mode (no public URL needed).
    ```
 4. DM the bot or use `/seo <query>` in any group it's added to. In groups it also responds to `@botname <query>`.
 
-#### Microsoft Teams
+### Microsoft Teams
 
 Uses the Azure Bot Framework. Requires a public HTTPS endpoint.
 
@@ -257,12 +210,12 @@ Uses the Azure Bot Framework. Requires a public HTTPS endpoint.
    ```env
    TEAMS_APP_ID=…
    TEAMS_APP_PASSWORD=…
-   TEAMS_APP_TYPE=MultiTenant        # or SingleTenant / UserAssignedMSI
+   TEAMS_APP_TYPE=MultiTenant         # or SingleTenant / UserAssignedMSI
    TEAMS_APP_TENANT_ID=…              # only for SingleTenant
    ```
 5. Use the **Developer Portal for Teams** or Teams Toolkit to package a manifest and install the bot into a team. Once installed, @mention it.
 
-#### WhatsApp (Twilio)
+### WhatsApp (Twilio)
 
 Uses Twilio's WhatsApp API (sandbox for testing, or a paid WhatsApp Business profile for production).
 
@@ -277,7 +230,7 @@ Uses Twilio's WhatsApp API (sandbox for testing, or a paid WhatsApp Business pro
 
 PDFs are too large for TwiML inline — the bot replies with a time-boxed download link (`/api/webhook/whatsapp/pdf/<token>`, valid for 30 min).
 
-#### Email (SMTP in/out)
+### Email (SMTP in/out)
 
 Works with any inbound-email provider (SendGrid Inbound Parse, Mailgun Routes, Cloudflare Email Workers) that POSTs parsed email to a webhook.
 
@@ -292,9 +245,9 @@ Works with any inbound-email provider (SendGrid Inbound Parse, Mailgun Routes, C
    ```
 2. **Inbound** — in your email provider, route incoming mail for `bot@yourdomain.com` to `POST https://YOUR_HOST/api/webhook/email`. Body fields accepted: `from`, `subject`, `text` / `body` / `body-plain`, optional `messageId`.
 
-The bot strips common email quoting (“On … wrote:”, `>` lines), runs the query, and replies with the report in the body + PDF as an attachment.
+The bot strips common email quoting ("On … wrote:", `>` lines), runs the query, and replies with the report in the body + PDF as an attachment.
 
-#### Web widget
+### Web widget
 
 The simplest possible integration — one script tag on any page:
 
@@ -311,7 +264,7 @@ Configure the endpoint from the parent page if needed:
 <script src="https://YOUR_HOST/widget.js" defer></script>
 ```
 
-#### Generic HTTP webhook
+### Generic HTTP webhook
 
 For anything not listed above — Mattermost, Zulip, Rocket.Chat, Zapier, n8n, Make.com, custom apps, mobile apps, curl:
 
@@ -337,7 +290,7 @@ Response:
 
 No credentials needed by default. Set `BOT_API_KEYS` to require a key (see [Security](#security)).
 
-#### CLI
+### CLI
 
 Zero external dependencies, instant local testing:
 
@@ -359,50 +312,43 @@ Also usable from scripts and pipelines.
 
 ---
 
-## Endpoints reference
+## HTTP endpoints
 
-| Route                           | Method | Auth | Purpose                                                      |
-|---------------------------------|--------|------|--------------------------------------------------------------|
-| `/api/message`                  | POST   | optional | Generic query entry — any client, any platform           |
-| `/api/messages`                 | POST   | Bot Framework | Microsoft Teams                                   |
-| `/api/webhook/whatsapp`         | POST   | Twilio signature | WhatsApp inbound                               |
-| `/api/webhook/whatsapp/pdf/:t`  | GET    | token (time-boxed) | PDF download for WhatsApp users              |
-| `/api/webhook/email`            | POST   | (provider) | Inbound-email webhook (SendGrid/Mailgun shape)      |
-| `/widget/`                      | GET    | —    | Standalone embeddable chat widget                            |
-| `/widget.js`                    | GET    | —    | Floating-button embed script                                 |
-| `/admin`                        | GET    | —    | Live HTML dashboard (counters + adapter status + recent log) |
-| `/health`                       | GET    | —    | JSON probe for uptime monitoring                             |
-| `/api/activity?limit=N`         | GET    | optional | Recent query log (JSON)                                  |
+| Route | Method | Purpose |
+|---|---|---|
+| `/api/message` | POST | Generic query entry — any client, any platform |
+| `/api/messages` | POST | Microsoft Teams (Bot Framework) |
+| `/api/webhook/whatsapp` | POST | WhatsApp inbound (Twilio) |
+| `/api/webhook/email` | POST | Inbound-email webhook |
+| `/widget/` | GET | Embeddable chat widget |
+| `/widget.js` | GET | Floating-button embed script |
+| `/admin` | GET | Live dashboard |
+| `/health` | GET | JSON probe for uptime monitoring |
+| `/api/activity` | GET | Recent query log (JSON) |
 
 ---
 
 ## Configuration reference
 
-All env vars live in `.env`. Only fill in what you need — unused platforms self-skip.
-
 ```env
-# ── Core ──────────────────────────────────────────
+# ── SEO data provider (pick one) ──────────────────
 SEO_PROVIDER=dataforseo              # dataforseo | semrush | ahrefs
 DATAFORSEO_USERNAME=
 DATAFORSEO_PASSWORD=
 SEMRUSH_API_KEY=
 AHREFS_API_TOKEN=
 
+# ── AI provider (pick one) ────────────────────────
 AI_PROVIDER=gemini                   # openai | gemini | anthropic
 AI_MODEL=gemini-2.5-flash
 OPENAI_API_KEY=
 GEMINI_API_KEY=
 ANTHROPIC_API_KEY=
 
-CHAT_API_URL=http://localhost:3000/api/chat
-PDF_API_URL=                         # defaults to CHAT_API_URL minus /api/chat + /api/export-pdf
-CORS_ORIGIN=*
-
 # ── Slack ─────────────────────────────────────────
 SLACK_BOT_TOKEN=
 SLACK_APP_TOKEN=
 SLACK_SIGNING_SECRET=
-SLACK_DEFAULT_CHANNEL=seo-reports
 
 # ── Discord ───────────────────────────────────────
 DISCORD_BOT_TOKEN=
@@ -413,251 +359,58 @@ TELEGRAM_BOT_TOKEN=
 # ── Microsoft Teams ───────────────────────────────
 TEAMS_APP_ID=
 TEAMS_APP_PASSWORD=
-TEAMS_APP_TYPE=MultiTenant           # MultiTenant | SingleTenant | UserAssignedMSI
-TEAMS_APP_TENANT_ID=
 
 # ── WhatsApp (Twilio) ─────────────────────────────
 TWILIO_AUTH_TOKEN=
-BOT_PUBLIC_URL=                      # e.g. https://bot.example.com
+BOT_PUBLIC_URL=
 
 # ── Email (SMTP outbound) ─────────────────────────
 SMTP_HOST=
 SMTP_PORT=587
-SMTP_SECURE=                         # 1 for implicit TLS (port 465)
 SMTP_USER=
 SMTP_PASS=
 SMTP_FROM=
 
 # ── CLI ───────────────────────────────────────────
-BOT_CLI_ENABLED=                     # 1 to enable when `npm start` is used
+BOT_CLI_ENABLED=                     # 1 to enable in `npm start`
 
 # ── Bot server ────────────────────────────────────
 BOT_SERVER_PORT=4000
-BOT_API_KEYS=                        # comma-separated; when set, /api/message requires one
-BOT_RATE_LIMIT_MAX=30                # requests
-BOT_RATE_LIMIT_WINDOW_SEC=60         # per this window, per key or IP
-BOT_ACTIVITY_RING=200                # in-memory recent-query ring size
-BOT_ACTIVITY_FILE=                   # e.g. ./logs/activity.jsonl for persistent audit
+BOT_API_KEYS=                        # comma-separated; if set, /api/message requires one
+BOT_RATE_LIMIT_MAX=30
+BOT_RATE_LIMIT_WINDOW_SEC=60
+
+# ── Embedded frontend ─────────────────────────────
+BOT_EMBED_FRONTEND=                  # 0 to disable the auto-spawned Next.js
+FRONTEND_PORT=3000
 ```
 
 ---
 
 ## Security
 
-### API key auth
-
-Set `BOT_API_KEYS` to a comma-separated list. `/api/message` and `/api/activity` then require one of those keys via:
-
-- `Authorization: Bearer <key>` *(recommended)*
-- `X-API-Key: <key>`
-- `?api_key=<key>` *(convenient for widget configs)*
-
-Comparison is constant-time. Unauthenticated requests return `401` / `403`.
-
-When `BOT_API_KEYS` is empty, endpoints are open — fine for local dev or intranet deployments, not recommended for public hosts.
-
-### Rate limiting
-
-Built-in sliding-window limiter: 30 req/min by default, keyed by API key (if present) or IP. Exceeding the limit returns HTTP 429 with a `Retry-After` header.
-
-Tune with `BOT_RATE_LIMIT_MAX` / `BOT_RATE_LIMIT_WINDOW_SEC`. For multi-instance deploys, add a reverse-proxy or CDN rate limiter in front.
-
-### Webhook signature verification
-
-The WhatsApp adapter verifies Twilio's HMAC-SHA1 signature when `TWILIO_AUTH_TOKEN` is set — unsigned requests get rejected with 403. For Slack this is handled natively by Socket Mode (no inbound URL exposed). Teams is signed by the Bot Framework SDK.
-
----
-
-## Observability
-
-### `GET /health`
-
-```json
-{
-  "ok": true,
-  "ts": "2026-04-18T13:07:45.602Z",
-  "version": "2.0.0",
-  "auth": "open",
-  "adapters": {
-    "slack":   { "status": "connected", "startedAt": "…", "lastEvent": "…" },
-    "whatsapp":{ "status": "ready",     "startedAt": "…", "lastEvent": null },
-    "email":   { "status": "ready (outbound disabled — SMTP_* not set)", … },
-    "webhook": { "status": "ready", … }
-  },
-  "counters": { "total": 12, "success": 11, "failure": 1, "ring": 12 }
-}
-```
-
-### `GET /admin`
-
-Zero-dep HTML dashboard. Auto-refreshes every 5 s. Shows:
-
-- Counters (total, success, failure)
-- Per-adapter status + last event timestamp
-- Last 50 queries: time, adapter, user, query, result, duration
-
-### Activity log
-
-Every query flows through [core/activity.js](core/activity.js):
-
-- **In-memory ring** (default: last 200 queries) — exposed via `/api/activity`
-- **Optional JSONL file** — set `BOT_ACTIVITY_FILE=./logs/activity.jsonl` for persistent audit. Each line:
-  ```json
-  {"ts":"2026-04-18T13:10:00Z","kind":"query","adapter":"slack","user":"U123","query":"…","success":true,"pdf":true,"durationMs":4210}
-  ```
-
-Pipe that to your log aggregator of choice (Loki, ELK, Datadog, BigQuery).
-
----
-
-## Deployment
-
-### Vercel (frontend + API)
-
-The frontend and the Next.js API routes (`/api/chat`, `/api/export-pdf`, etc.) deploy cleanly to Vercel's free tier:
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/seo-keyword-agent)
-
-Set the env vars from [Configuration reference](#configuration-reference) in the Vercel dashboard.
-
-### Bot server — Docker
-
-The bot server (`bot-server.js`) is a separate long-lived process and doesn't fit Vercel's serverless model. Run it anywhere Node runs:
-
-```bash
-docker compose up -d
-docker compose logs -f bot
-```
-
-The included [Dockerfile](Dockerfile) uses `node:20-alpine`, `npm ci --omit=dev`, and a `HEALTHCHECK` that hits `/health`. [docker-compose.yml](docker-compose.yml) also wires `host.docker.internal` so the bot can reach a Next.js frontend running on your host during local dev.
-
-### Bot server — bare-metal / PaaS
-
-Any Node 18+ host works: Railway, Render, Fly.io, a VPS with `pm2`, a systemd unit, whatever. `npm ci --omit=dev && node bot-server.js` is all you need. The process handles SIGINT/SIGTERM gracefully — it closes the HTTP server before exit so orchestrators can roll restarts cleanly.
-
----
-
-## Adding a new platform
-
-The whole point of the adapter split is that new platforms are cheap. Template:
-
-```js
-// adapters/yourplatform.js
-const { handleQuery, humanizeError } = require("../core/handler");
-const activity = require("../core/activity");
-
-// Long-lived transports (WebSocket, long-poll, etc.) export start():
-function start() {
-  if (!process.env.YOURPLATFORM_TOKEN) {
-    console.warn("[yourplatform] token not set — skipping.");
-    return;
-  }
-  activity.registerAdapter("yourplatform", "connecting");
-
-  const client = /* your SDK */;
-  client.on("message", async (msg) => {
-    try {
-      const result = await handleQuery(msg.text, {
-        adapter: "yourplatform",
-        user: msg.from,
-      });
-      await client.reply(msg, result.report);
-      if (result.pdfBuffer) await client.sendFile(msg, result.pdfBuffer, result.filename);
-    } catch (err) {
-      await client.reply(msg, `⚠️ ${err.userFacing || humanizeError(err.message)}`);
-    }
-  });
-
-  client.connect().then(() => activity.setAdapterStatus("yourplatform", "connected"));
-}
-
-module.exports = { start };
-
-// HTTP-webhook adapters export mount(app) instead — see adapters/teams.js
-```
-
-Then in [bot-server.js](bot-server.js):
-
-```js
-require("./adapters/yourplatform").start();
-```
-
-That's the full integration cost. Look at [adapters/telegram.js](adapters/telegram.js) for a long-poll example or [adapters/whatsapp.js](adapters/whatsapp.js) for an HTTP-webhook one.
-
----
-
-## Web scraper (internal links)
-
-`/api/internal-links` has a built-in scraper with two modes:
-
-| Mode | How it works | Best for | Deployment |
-|---|---|---|---|
-| `fetch` *(default)* | HTTP + HTML parsing | Static sites, blogs, docs | Works everywhere |
-| `browser` | Playwright + Chromium | SPAs, JS-rendered pages | Local / self-hosted |
-
-Browser mode features: full JS rendering, auto-scroll for lazy content, modal dismissal, resource blocking for speed, anti-detection UA.
-
-Install Chromium when first using browser mode:
-
-```bash
-npm run scraper:install
-```
-
----
-
-## Backend API routes
-
-These are the Next.js API routes the bot backend (and frontend) call. They also work standalone — send `POST` JSON from anywhere.
-
-| Route | Method | Purpose |
-|---|---|---|
-| `/api/keyword-ideas` | POST | Keyword ideas from DataForSEO |
-| `/api/serp-search` | POST | Google SERP organic results |
-| `/api/related-keywords` | POST | Related keyword variations |
-| `/api/competitor-keywords` | POST | Keywords a competitor ranks for |
-| `/api/ai-mode` | POST | Enriched search volume data |
-| `/api/internal-links` | POST | Scrape internal links |
-| `/api/chat` | POST | AI agent orchestrator (what the bot calls) |
-| `/api/export-pdf` | POST | Render the styled PDF for a report |
-
-All return structured JSON; see each route's handler in [frontend/app/api/](frontend/app/api/) for the exact shape.
+- Set `BOT_API_KEYS` to a comma-separated list. `/api/message` and `/api/activity` then require one via `Authorization: Bearer <key>`, `X-API-Key`, or `?api_key=`. Constant-time comparison.
+- Built-in sliding-window rate limiter: 30 req/min by default, keyed by API key or IP.
+- WhatsApp adapter verifies Twilio's HMAC-SHA1 signature when `TWILIO_AUTH_TOKEN` is set.
 
 ---
 
 ## Tech stack
 
-- **Framework**: Next.js 14 (App Router), Node 20+
-- **Language**: TypeScript (frontend), JavaScript (bot server)
-- **Styling**: Tailwind CSS
-- **Data**: DataForSEO
-- **Scraping**: built-in fetch + optional Playwright
-- **AI**: OpenAI / Gemini / Claude (user's choice)
-- **Bot SDKs**: `@slack/socket-mode`, `@slack/web-api`, `discord.js`, `node-telegram-bot-api`, `botbuilder`, `nodemailer`
-- **HTTP**: `express`, `cors`
-- **Deploy**: Vercel (frontend) + Docker / any Node host (bot server)
+Node 20+, Express, Next.js 14, Tailwind CSS, DataForSEO / SEMrush / Ahrefs, OpenAI / Gemini / Anthropic SDKs, Slack / Discord / Telegram / Bot Framework SDKs, optional Playwright for JS-rendered scraping.
 
 ---
 
-## Contributing
-
-Contributions welcome — especially new platform adapters, better error messages, or observability upgrades.
-
-1. Fork and clone.
-2. `npm install` at the repo root and inside `frontend/`.
-3. Run both sides: `npm run dev --prefix frontend` + `npm run dev`.
-4. Make your change. The handler in [core/handler.js](core/handler.js) is the only place SEO logic should live — adapters are thin.
-5. Add/update docs in this README or [BOT_PLATFORMS.md](BOT_PLATFORMS.md).
-6. Open a PR.
-
-### Project layout
+## Project layout
 
 ```
-seo-keyword-agent/
+SEO-Agent/
 ├── core/                    # shared, platform-agnostic modules
 │   ├── handler.js           # query → report + PDF
 │   ├── activity.js          # in-memory ring + JSONL log
 │   ├── auth.js              # API key middleware
-│   └── rateLimit.js         # sliding-window limiter
+│   ├── rateLimit.js         # sliding-window limiter
+│   └── frontend.js          # spawns the embedded Next.js on `npm start`
 ├── adapters/                # one file per platform
 │   ├── slack.js
 │   ├── discord.js
@@ -683,8 +436,6 @@ seo-keyword-agent/
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). Use it, fork it, ship it, sell services on top of it.
+**PolyForm Noncommercial 1.0.0** — see [LICENSE](./LICENSE).
 
----
-
-> Built because good SEO research tools shouldn't be a $200/mo SaaS subscription and good chat bots shouldn't be locked to a single platform.
+Free for personal, educational, and research use. **Commercial use is not permitted** under this license — including selling the software, hosting it as a paid SaaS, integrating it into commercial products, or any revenue-generating activity. For commercial licensing, partnerships, or hosted-SaaS rights, contact [shekharpatel2221@gmail.com](mailto:shekharpatel2221@gmail.com).

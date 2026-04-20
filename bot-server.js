@@ -19,8 +19,14 @@ const express = require("express");
 let cors; try { cors = require("cors"); } catch {}
 
 const activity = require("./core/activity");
+const frontend = require("./core/frontend");
 
 console.log(`▶ ${BUILD_TAG} — started at ${new Date().toISOString()}`);
+
+// Boot the embedded Next.js frontend (skipped if CHAT_API_URL points elsewhere
+// or BOT_EMBED_FRONTEND=0). Starts before adapters so CHAT_API_URL is set
+// before any adapter module reads it.
+const frontendChild = frontend.start();
 
 const app = express();
 if (cors) app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
@@ -60,10 +66,20 @@ function shutdown(signal) {
     console.error("  shutdown timeout — forcing exit");
     process.exit(1);
   }, 8000).unref();
-  server.close((err) => {
+  Promise.all([
+    new Promise((resolve) =>
+      server.close((err) => {
+        if (err) console.error("  HTTP close error:", err.message);
+        else console.log("  HTTP server closed.");
+        resolve();
+      })
+    ),
+    frontend.stop(frontendChild).then(() => {
+      if (frontendChild) console.log("  Frontend stopped.");
+    }),
+  ]).then(() => {
     clearTimeout(timer);
-    if (err) { console.error("  HTTP close error:", err.message); process.exit(1); }
-    console.log("  HTTP server closed. bye.");
+    console.log("  bye.");
     process.exit(0);
   });
 }
