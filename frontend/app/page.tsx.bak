@@ -1,0 +1,23 @@
+import { readFileSync } from "fs";
+import { join } from "path";
+
+// Server Component — reads the pre-built landing page HTML and serves it
+// The root layout.tsx is a pass-through (returns children directly)
+// so this component owns the full <html>...<body>...</body></html> structure
+
+export const dynamic = "force-static";
+
+export default function LandingPage() {
+  // Read the static landing page HTML from the /landing directory
+  const htmlPath = join(process.cwd(), "landing", "index.html");
+  const html = readFileSync(htmlPath, "utf-8");
+
+  // Extract just the <body> content and inject the full styles/scripts inline
+  // We serve the complete HTML via dangerouslySetInnerHTML on the root element
+  return (
+    <html
+      lang="en"
+      dangerouslySetInnerHTML={{ __html: html.replace(/^<!DOCTYPE html>\s*<html[^>]*>/, "").replace(/<\/html>\s*$/, "") }}
+    />
+  );
+}

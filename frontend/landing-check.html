@@ -1,0 +1,3558 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover"/><link rel="preload" as="script" fetchPriority="low" href="/_next/static/chunks/webpack.js?v=1776526974233"/><script src="/_next/static/chunks/main-app.js?v=1776526974233" async=""></script><script src="/_next/static/chunks/app-pages-internals.js" async=""></script><script src="/_next/static/chunks/app/page.js" async=""></script><meta name="theme-color" content="#fafaf9"/><title>SEO Keyword Agent — Open Source SEO Research Tool</title><meta name="description" content="Open-source SEO keyword research agent powered by DataForSEO and your own AI key. Deploy free on Vercel. No monthly fees. MIT License."/><link rel="icon" href="/favicon.png"/><script src="/_next/static/chunks/polyfills.js" noModule=""></script></head><body><div><style>
+    /* ========================================
+       DESIGN TOKENS
+       ======================================== */
+    :root {
+      --bg-primary: #F5F3EE;
+      --bg-card: #FFFFFF;
+      --bg-dark: #0F0F0D;
+      --text-primary: #1A1A16;
+      --text-secondary: #6B6B60;
+      --text-muted: #9E9E90;
+      --accent: #4B5BF5;
+      --accent-hover: #3848E8;
+      --accent-green: #22C55E;
+      --accent-coral: #E85D3F;
+      --border: #E8E5DF;
+      --border-dark: #2A2A24;
+      --code-bg: #1E1E1A;
+      --code-text: #4ADE80;
+
+      --font-display: 'Lora', Georgia, serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+
+      --max-width: 1200px;
+      --radius: 16px;
+      --radius-pill: 100px;
+    }
+
+    /* ========================================
+       GLOBAL RESET & BASE
+       ======================================== */
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-body);
+      font-weight: 400;
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+      transition: color 0.2s;
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    /* ========================================
+       ANIMATIONS
+       ======================================== */
+    @keyframes fadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeSlideLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-40px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes fadeSlideRight {
+      from {
+        opacity: 0;
+        transform: translateX(40px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-12px);
+      }
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0;
+      }
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: -200% center;
+      }
+
+      100% {
+        background-position: 200% center;
+      }
+    }
+
+    @keyframes countUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes dotPulse {
+
+      0%,
+      80%,
+      100% {
+        transform: scale(0.6);
+        opacity: 0.4;
+      }
+
+      40% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes scaleFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* Scroll animation classes */
+    [data-animate] {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    [data-animate].visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    [data-animate="left"] {
+      transform: translateX(-40px);
+    }
+
+    [data-animate="left"].visible {
+      transform: translateX(0);
+    }
+
+    [data-animate="right"] {
+      transform: translateX(40px);
+    }
+
+    [data-animate="right"].visible {
+      transform: translateX(0);
+    }
+
+    /* Custom cursor */
+    .custom-cursor {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 10px;
+      height: 10px;
+      background-color: #4B5BF5; /* Accent color */
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 10000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      will-change: transform;
+    }
+
+    /* Floating Cursors (Hero Animation) */
+    .floating-cursor {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      display: flex;
+      align-items: flex-start;
+      gap: 3px;
+      pointer-events: none;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+      will-change: transform, opacity;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+    .floating-cursor svg {
+      width: 20px;
+      height: 20px;
+      transform: rotate(-15deg);
+    }
+    .fc-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 3px 8px;
+      border-radius: 4px;
+      color: #0F0F0D;
+      white-space: nowrap;
+      margin-top: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .fc-indexer { color: #4ADE80; z-index: 15; }
+    .fc-indexer .fc-label { background: #4ADE80; }
+    
+    .fc-ranker { color: #60A5FA; z-index: 14; }
+    .fc-ranker .fc-label { background: #60A5FA; }
+    
+    .fc-crawler { color: #FDBA74; z-index: 13; }
+    .fc-crawler .fc-label { background: #FDBA74; }
+    
+    .fc-auditor { color: #FCA5A5; z-index: 16; }
+    .fc-auditor .fc-label { background: #FCA5A5; }
+
+    /* ========================================
+       NAV BAR
+       ======================================== */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      background: rgba(245, 243, 238, 0.85);
+      backdrop-filter: blur(0px);
+      border-bottom: 1px solid transparent;
+      transition: all 0.3s ease;
+      padding: 0 32px;
+    }
+
+    .nav.scrolled {
+      backdrop-filter: blur(12px);
+      border-bottom-color: var(--border);
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .nav-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 17px;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .nav-logo svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 36px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-primary);
+    }
+
+    .nav-links .ext-arrow {
+      font-size: 10px;
+      margin-left: 2px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 10px 24px;
+      border-radius: var(--radius-pill);
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      line-height: 1.2;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--text-primary);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--text-primary);
+      transform: translateY(-1px);
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .btn-accent:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(75, 91, 245, 0.3);
+    }
+
+    .btn-outline-dark {
+      background: transparent;
+      border-color: var(--text-primary);
+      color: var(--text-primary);
+    }
+
+    .btn-outline-dark:hover {
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      transform: translateY(-2px);
+    }
+
+    .btn-large {
+      padding: 16px 40px;
+      font-size: 13px;
+    }
+
+    .btn-xl {
+      padding: 18px 48px;
+      font-size: 14px;
+    }
+
+    /* Mobile nav */
+    .nav-toggle {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+    }
+
+    .nav-toggle span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--text-primary);
+      margin: 5px 0;
+      transition: all 0.3s;
+    }
+
+    /* ========================================
+       HERO SECTION
+       ======================================== */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 32px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-bg-pattern {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 800px;
+      height: 800px;
+      opacity: 0.04;
+      animation: float 6s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 720px;
+    }
+
+    .hero-label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 32px;
+      opacity: 0;
+      animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(48px, 6vw, 80px);
+      font-weight: 400;
+      line-height: 1.08;
+      color: var(--text-primary);
+      margin-bottom: 28px;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-title .word {
+      display: inline-block;
+      opacity: 0;
+      animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .hero-title .italic {
+      font-style: italic;
+    }
+
+    .hero-subtitle {
+      font-family: var(--font-body);
+      font-size: 19px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      max-width: 520px;
+      margin: 0 auto 40px;
+      line-height: 1.65;
+      opacity: 0;
+      animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards;
+    }
+
+    .hero-buttons {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.9s forwards;
+    }
+
+    .hero-caption {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 28px;
+      letter-spacing: 0.02em;
+      opacity: 0;
+      animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 1.1s forwards;
+    }
+
+    /* ========================================
+       CHAT DEMO
+       ======================================== */
+    .chat-section {
+      padding: 80px 32px 120px;
+      background: var(--bg-primary);
+    }
+
+    .chat-section-label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .chat-window {
+      max-width: 760px;
+      margin: 0 auto;
+      background: var(--bg-card);
+      border-radius: 24px;
+      box-shadow: 0 32px 80px rgba(0, 0, 0, 0.10);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .chat-messages {
+      padding: 28px 28px 20px;
+      height: 420px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .chat-msg {
+      max-width: 85%;
+      padding: 14px 20px;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.5;
+      animation: scaleFadeIn 0.3s ease forwards;
+    }
+
+    .chat-msg.user {
+      align-self: flex-end;
+      background: var(--bg-dark);
+      color: #fff;
+      border-bottom-right-radius: 6px;
+    }
+
+    .chat-msg.assistant {
+      align-self: flex-start;
+      background: #F8F7F4;
+      color: var(--text-primary);
+      border-bottom-left-radius: 6px;
+      max-width: 92%;
+      padding: 20px 24px;
+    }
+
+    .chat-msg.assistant .result-header {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chat-msg.assistant .keyword-table {
+      width: 100%;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      margin-bottom: 14px;
+    }
+
+    .chat-msg.assistant .keyword-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid #EBE9E4;
+      align-items: center;
+    }
+
+    .chat-msg.assistant .keyword-row:last-child {
+      border-bottom: none;
+    }
+
+    .chat-msg.assistant .kw-name {
+      flex: 1;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .chat-msg.assistant .kw-vol {
+      color: var(--text-secondary);
+      margin-right: 16px;
+      font-size: 12px;
+    }
+
+    .chat-msg.assistant .kw-diff {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+
+    .kd-low {
+      background: #DCFCE7;
+      color: #166534;
+    }
+
+    .kd-med {
+      background: #FEF9C3;
+      color: #854D0E;
+    }
+
+    .kd-high {
+      background: #FFE4E6;
+      color: #9F1239;
+    }
+
+    .chat-msg.assistant .recommendation {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: #EEF2FF;
+      border-radius: 12px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: #3730A3;
+      line-height: 1.5;
+    }
+
+    .typing-indicator {
+      display: flex;
+      gap: 5px;
+      padding: 14px 20px;
+      align-self: flex-start;
+      background: #F8F7F4;
+      border-radius: 18px;
+      border-bottom-left-radius: 6px;
+    }
+
+    .typing-indicator span {
+      width: 8px;
+      height: 8px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      animation: dotPulse 1.2s infinite;
+    }
+
+    .typing-indicator span:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    .typing-indicator span:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    .chat-input-area {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .chat-input-plus {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 20px;
+      flex-shrink: 0;
+      transition: border-color 0.2s;
+    }
+
+    .chat-input-field {
+      flex: 1;
+      font-family: var(--font-body);
+      font-size: 15px;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text-primary);
+      min-height: 24px;
+      line-height: 1.5;
+    }
+
+    .chat-input-field::placeholder {
+      color: var(--text-muted);
+    }
+
+    .chat-send-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: var(--accent-coral);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .chat-send-btn:hover {
+      transform: scale(1.05);
+      background: #D14E32;
+    }
+
+    .chat-send-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .cursor-blink {
+      display: inline-block;
+      width: 2px;
+      height: 18px;
+      background: var(--text-primary);
+      animation: blink 1s infinite;
+      vertical-align: text-bottom;
+      margin-left: 1px;
+    }
+
+    /* ========================================
+       STATS BAR
+       ======================================== */
+    .stats-bar {
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    .stat-cell {
+      padding: 48px 32px;
+      text-align: center;
+      border-right: 1px solid var(--border);
+    }
+
+    .stat-cell:last-child {
+      border-right: none;
+    }
+
+    .stat-number {
+      font-family: var(--font-display);
+      font-size: 42px;
+      font-weight: 400;
+      color: var(--text-primary);
+      line-height: 1;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-label {
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    /* ========================================
+       FEATURE SECTIONS
+       ======================================== */
+    .features-section {
+      padding: 120px 32px;
+      background: var(--bg-primary);
+    }
+
+    .feature-block {
+      max-width: var(--max-width);
+      margin: 0 auto 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: grid;
+      grid-template-columns: 40% 60%;
+      overflow: hidden;
+    }
+
+    .feature-block:last-child {
+      margin-bottom: 0;
+    }
+
+    .feature-left {
+      padding: 48px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .feature-label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 20px;
+    }
+
+    .feature-label.accent {
+      color: var(--accent);
+    }
+
+    .feature-label.green {
+      color: var(--accent-green);
+    }
+
+    .feature-label.coral {
+      color: var(--accent-coral);
+    }
+
+    .feature-heading {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 400;
+      line-height: 1.2;
+      color: var(--text-primary);
+      margin-bottom: 32px;
+      letter-spacing: -0.01em;
+    }
+
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .feature-item {
+      padding-left: 20px;
+      border-left: 2px solid var(--border);
+      transition: border-color 0.3s;
+    }
+
+    .feature-item:hover {
+      border-left-color: var(--accent);
+    }
+
+    .feature-item-title {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .feature-item-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    .feature-right {
+      background: var(--code-bg);
+      padding: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 480px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-right::before {
+      content: '';
+      position: absolute;
+      top: 12px;
+      left: 20px;
+      display: flex;
+      gap: 6px;
+      width: 52px;
+      height: 12px;
+      background:
+        radial-gradient(circle at 6px 6px, #FF5F57 6px, transparent 6px),
+        radial-gradient(circle at 22px 6px, #FFBD2E 6px, transparent 6px),
+        radial-gradient(circle at 38px 6px, #28CA42 6px, transparent 6px);
+    }
+
+    .code-block {
+      width: 100%;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--code-text);
+      white-space: pre-wrap;
+      word-break: break-all;
+      padding-top: 24px;
+    }
+
+    .code-block .ck {
+      color: #C678DD;
+    }
+
+    /* keys / keywords */
+    .code-block .cs {
+      color: #98C379;
+    }
+
+    /* strings */
+    .code-block .cn {
+      color: #E5C07B;
+    }
+
+    /* numbers */
+    .code-block .cc {
+      color: #5C6370;
+    }
+
+    /* comments */
+    .code-block .cv {
+      color: #E06C75;
+    }
+
+    /* values */
+    .code-block .ct {
+      color: #ABB2BF;
+    }
+
+    /* text */
+    .code-block .cg {
+      color: var(--code-text);
+    }
+
+    /* green */
+    .code-block .cw {
+      color: #FFFFFF;
+    }
+
+    /* white */
+    .code-block .co {
+      color: var(--accent-coral);
+    }
+
+    /* orange */
+
+    /* Terminal style */
+    .terminal-block {
+      width: 100%;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 2;
+      color: #ABB2BF;
+      padding-top: 24px;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    .terminal-block .prompt {
+      color: var(--accent-green);
+    }
+
+    .terminal-block .cmd {
+      color: #FFFFFF;
+    }
+
+    .terminal-block .flag {
+      color: #61AFEF;
+    }
+
+    .terminal-block .str {
+      color: #98C379;
+    }
+
+    .terminal-block .success {
+      color: var(--accent-green);
+    }
+
+    .terminal-block .info {
+      color: #61AFEF;
+    }
+
+    /* ========================================
+       HOW IT WORKS
+       ======================================== */
+    .how-section {
+      padding: 120px 32px;
+      background: var(--bg-primary);
+    }
+
+    .how-header {
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto 80px;
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .section-heading {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 4vw, 48px);
+      font-weight: 400;
+      line-height: 1.15;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .section-heading .italic {
+      font-style: italic;
+    }
+
+    .how-steps {
+      max-width: 960px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 48px;
+      position: relative;
+    }
+
+    .how-step {
+      position: relative;
+      text-align: center;
+      padding: 40px 24px;
+    }
+
+    .how-step-bg-number {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-display);
+      font-size: 120px;
+      font-weight: 600;
+      color: var(--text-primary);
+      opacity: 0.04;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .how-step-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 500;
+      margin: 0 auto 20px;
+      position: relative;
+    }
+
+    .how-step-title {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 18px;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+
+    .how-step-desc {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .how-step-arrow {
+      position: absolute;
+      right: -32px;
+      top: 60px;
+      font-size: 24px;
+      color: var(--accent);
+      font-weight: 300;
+    }
+
+    /* ========================================
+       YOUTUBE VIDEO SECTION
+       ======================================== */
+    .video-section {
+      padding: 120px 32px;
+      background: var(--bg-dark);
+    }
+
+    .video-section .section-label {
+      color: var(--accent);
+    }
+
+    .video-header {
+      text-align: center;
+      max-width: 620px;
+      margin: 0 auto 56px;
+    }
+
+    .video-header .section-heading {
+      color: #FFFFFF;
+    }
+
+    .video-header .section-heading .italic {
+      font-style: italic;
+    }
+
+    .video-subtitle {
+      font-family: var(--font-body);
+      font-size: 17px;
+      color: #888;
+      margin-top: 20px;
+      line-height: 1.6;
+    }
+
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 960px;
+      margin: 0 auto;
+      aspect-ratio: 16 / 9;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border-dark);
+      box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+      background: #111;
+    }
+
+    .video-wrapper iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* Placeholder shown when no video ID is set */
+    .video-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      background: linear-gradient(135deg, #0d0d0b 0%, #1a1a16 50%, #0d0d0b 100%);
+    }
+
+    .video-placeholder-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(75, 91, 245, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(75, 91, 245, 0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    .video-play-btn {
+      width: 80px;
+      height: 80px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .video-play-btn:hover {
+      background: rgba(75, 91, 245, 0.2);
+      border-color: var(--accent);
+      transform: scale(1.1);
+    }
+
+    .video-play-btn svg {
+      width: 28px;
+      height: 28px;
+      fill: rgba(255, 255, 255, 0.8);
+      margin-left: 4px;
+    }
+
+    .video-placeholder-label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.3);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+
+    .video-placeholder-label strong {
+      display: block;
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.55);
+      font-family: var(--font-body);
+      font-weight: 400;
+      letter-spacing: 0;
+      margin-bottom: 6px;
+    }
+
+    .video-caption {
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #666;
+      margin-top: 28px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ========================================
+       GITHUB / OPEN SOURCE SECTION
+       ======================================== */
+    .github-section {
+      padding: 120px 32px;
+      background: var(--bg-primary);
+    }
+
+    .github-grid {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+
+    .github-text .section-heading {
+      margin-bottom: 20px;
+    }
+
+    .github-desc {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 36px;
+    }
+
+    .github-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .github-buttons .btn-sub {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: block;
+      margin-top: 4px;
+      letter-spacing: 0.02em;
+    }
+
+    /* GitHub Card */
+    .gh-card {
+      background: var(--bg-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 20px;
+      padding: 36px;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform;
+    }
+
+    .gh-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .gh-card-icon {
+      width: 32px;
+      height: 32px;
+      color: #fff;
+    }
+
+    .gh-card-name {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 18px;
+      color: #fff;
+    }
+
+    .gh-card-user {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 16px;
+    }
+
+    .gh-card-desc {
+      font-size: 15px;
+      color: #888;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .gh-card-divider {
+      height: 1px;
+      background: var(--border-dark);
+      margin: 20px 0;
+    }
+
+    .gh-card-stats {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 4px;
+    }
+
+    .gh-card-stat-label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .gh-card-stat-value {
+      color: var(--accent-green);
+      font-weight: 500;
+    }
+
+    .gh-card-tags {
+      display: flex;
+      gap: 8px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .gh-card-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border-dark);
+      color: #888;
+    }
+
+    .gh-card-cmd {
+      background: #161614;
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--code-text);
+      margin: 20px 0;
+      border: 1px solid #222;
+    }
+
+    .gh-card-btn {
+      display: block;
+      width: 100%;
+      text-align: center;
+      padding: 14px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: var(--radius-pill);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      transition: all 0.25s;
+      border: none;
+      cursor: pointer;
+    }
+
+    .gh-card-btn:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+    }
+
+    /* ========================================
+       SETUP / ENV SECTION
+       ======================================== */
+    .setup-section {
+      padding: 100px 32px;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .setup-grid {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+
+    .setup-list {
+      list-style: none;
+      margin-top: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .setup-list li {
+      font-size: 15px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .setup-list .check {
+      color: var(--accent-green);
+      font-weight: 600;
+    }
+
+    /* Tabs */
+    .setup-tabs {
+      background: var(--code-bg);
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border-dark);
+    }
+
+    .setup-tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--border-dark);
+    }
+
+    .setup-tab-btn {
+      padding: 14px 24px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #666;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+      letter-spacing: 0.02em;
+    }
+
+    .setup-tab-btn.active {
+      color: #fff;
+      border-bottom-color: var(--accent);
+    }
+
+    .setup-tab-btn:hover:not(.active) {
+      color: #999;
+    }
+
+    .setup-tab-content {
+      padding: 28px;
+    }
+
+    .setup-tab-panel {
+      display: none;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 2;
+      color: var(--code-text);
+      white-space: pre-wrap;
+      animation: scaleFadeIn 0.3s ease;
+    }
+
+    .setup-tab-panel.active {
+      display: block;
+    }
+
+    .setup-tab-panel .cc {
+      color: #5C6370;
+    }
+
+    .setup-tab-panel .cv {
+      color: #E5C07B;
+    }
+
+    .setup-tab-panel .ck {
+      color: #ABB2BF;
+    }
+
+    /* ========================================
+       INTEGRATIONS SECTION
+       ======================================== */
+    .integrations-section {
+      padding: 120px 32px;
+      background: var(--bg-primary);
+    }
+
+    .integrations-header {
+      text-align: center;
+      max-width: 500px;
+      margin: 0 auto 60px;
+    }
+
+    .integrations-grid {
+      max-width: 840px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--bg-card);
+    }
+
+    .integration-cell {
+      padding: 36px 24px;
+      text-align: center;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      transition: all 0.25s;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .integration-cell:nth-child(4n) {
+      border-right: none;
+    }
+
+    .integration-cell:nth-child(n+5) {
+      border-bottom: none;
+    }
+
+    .integration-cell:hover {
+      background: #FAFAF7;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      z-index: 1;
+    }
+
+    .integration-icon {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+
+    .integration-icon img,
+    .integration-icon svg {
+      max-width: 32px;
+      max-height: 32px;
+      object-fit: contain;
+    }
+
+    .integration-name {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-secondary);
+    }
+
+    .integration-arrow {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* ========================================
+       BOTTOM CTA (DARK)
+       ======================================== */
+    .bottom-cta {
+      padding: 120px 32px;
+      background: var(--bg-dark);
+      text-align: center;
+    }
+
+    .bottom-cta .section-label {
+      color: var(--accent);
+    }
+
+    .bottom-cta .section-heading {
+      color: #fff;
+      max-width: 600px;
+      margin: 0 auto 20px;
+    }
+
+    .bottom-cta-subtitle {
+      font-size: 17px;
+      color: #888;
+      max-width: 480px;
+      margin: 0 auto 56px;
+      line-height: 1.6;
+    }
+
+    .cta-boxes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      max-width: 780px;
+      margin: 0 auto 56px;
+    }
+
+    .cta-box {
+      border: 1px solid var(--border-dark);
+      border-radius: 14px;
+      padding: 32px 24px;
+      text-align: left;
+    }
+
+    .cta-box-num {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cta-box-title {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 17px;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .cta-box-desc {
+      font-size: 14px;
+      color: #777;
+      line-height: 1.55;
+    }
+
+    .bottom-cta .btn-xl {
+      margin-bottom: 20px;
+    }
+
+    .bottom-cta-caption {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #555;
+      letter-spacing: 0.04em;
+    }
+
+    /* ========================================
+       FOOTER
+       ======================================== */
+    .footer {
+      background: var(--bg-dark);
+      border-top: 1px solid var(--border-dark);
+      padding: 60px 32px 40px;
+    }
+
+    .footer-grid {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 440px;
+      gap: 100px;
+      margin-bottom: 48px;
+    }
+
+    .footer-links-area {
+      display: flex;
+      gap: 140px;
+    }
+
+    .footer-animation-area {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: flex-start;
+    }
+
+    .footer-gif {
+      width: 100%;
+      max-width: 420px;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    }
+
+    .footer-col-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .footer-col-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .footer-col-links a {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      transition: color 0.2s;
+    }
+
+    .footer-col-links a:hover {
+      color: #fff;
+    }
+
+    .footer-bottom {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 28px;
+      border-top: 1px solid var(--border-dark);
+    }
+
+    .footer-bottom-left {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-bottom-center {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      display: inline-block;
+    }
+
+    .footer-bottom-right {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-social {
+      color: #666;
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+    }
+
+    .footer-social:hover {
+      color: #fff;
+    }
+
+    .footer-social svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* ========================================
+       MODAL (LICENSE)
+       ======================================== */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .modal-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dark);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 640px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-overlay.active .modal-container {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--border-dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 18px;
+      color: var(--text-primary);
+      z-index: 1001;
+    }
+
+    .nav-logo-img {
+      height: 32px;
+      width: auto;
+      border-radius: 6px;
+    }
+
+    .modal-title {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 18px;
+      color: #fff;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      padding: 8px;
+      margin: -8px;
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      color: #fff;
+    }
+
+    .modal-body {
+      padding: 32px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.6;
+      color: #aaa;
+      white-space: pre-wrap;
+    }
+
+    .modal-body::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .modal-body::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 10px;
+    }
+
+    /* ========================================
+       RESPONSIVE
+       ======================================== */
+    @media (max-width: 1024px) {
+      .feature-block {
+        grid-template-columns: 1fr;
+      }
+
+      .feature-right {
+        min-height: 360px;
+      }
+
+      .github-grid,
+      .setup-grid {
+        grid-template-columns: 1fr;
+        gap: 48px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav {
+        padding: 0 20px;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .nav-actions {
+        display: none;
+      }
+
+      .nav-toggle {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 40px;
+        height: 40px;
+        position: relative;
+        z-index: 1001;
+      }
+
+      .nav-toggle span {
+        display: block;
+        width: 22px;
+        height: 2px;
+        background: var(--text-primary);
+        margin: 3px 0;
+        transition: transform 0.25s ease, opacity 0.2s ease;
+      }
+
+      .nav-toggle.is-open span:nth-child(1) {
+        transform: translateY(5px) rotate(45deg);
+      }
+
+      .nav-toggle.is-open span:nth-child(2) {
+        opacity: 0;
+      }
+
+      .nav-toggle.is-open span:nth-child(3) {
+        transform: translateY(-5px) rotate(-45deg);
+      }
+
+      .nav-links.mobile-open {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        position: fixed;
+        top: 64px;
+        left: 0;
+        right: 0;
+        max-height: calc(100vh - 64px);
+        max-height: calc(100dvh - 64px);
+        overflow-y: auto;
+        background: rgba(245, 243, 238, 0.98);
+        backdrop-filter: blur(12px);
+        padding: 20px 24px 28px;
+        border-bottom: 1px solid var(--border);
+        gap: 18px;
+        z-index: 999;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .nav-links.mobile-open li {
+        width: 100%;
+      }
+
+      .nav-links.mobile-open a {
+        display: block;
+        width: 100%;
+        padding: 10px 0;
+        font-size: 13px;
+      }
+
+      .nav-links.mobile-open .mobile-cta {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+        padding-top: 16px;
+        margin-top: 4px;
+        border-top: 1px solid var(--border);
+      }
+
+      .nav-links.mobile-open .mobile-cta .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    /* Hide mobile CTAs on desktop */
+    @media (min-width: 769px) {
+      .nav-links .mobile-cta {
+        display: none;
+      }
+    }
+
+    /* Redundant media wrapper to satisfy prior structure */
+    @media (max-width: 768px) {
+
+      .hero {
+        padding: 100px 24px 60px;
+        min-height: auto;
+      }
+
+      .hero-title {
+        font-size: 42px;
+      }
+
+      .hero-subtitle {
+        font-size: 16px;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .stat-cell:nth-child(2) {
+        border-right: none;
+      }
+
+      .stat-cell:nth-child(1),
+      .stat-cell:nth-child(2) {
+        border-bottom: 1px solid var(--border);
+      }
+
+      .stat-number {
+        font-size: 32px;
+      }
+
+      .feature-block {
+        grid-template-columns: 1fr;
+      }
+
+      .feature-left {
+        padding: 32px 24px;
+      }
+
+      .feature-heading {
+        font-size: 28px;
+      }
+
+      .feature-right {
+        min-height: 300px;
+        padding: 24px;
+      }
+
+      .how-steps {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .how-step-arrow {
+        display: none;
+      }
+
+      .integrations-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .integration-cell:nth-child(2n) {
+        border-right: none;
+      }
+
+      .integration-cell:nth-child(n+5) {
+        border-bottom: 1px solid var(--border);
+      }
+
+      .integration-cell:nth-child(n+7) {
+        border-bottom: none;
+      }
+
+      .cta-boxes {
+        grid-template-columns: 1fr;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 48px;
+      }
+
+      .footer-links-area {
+        gap: 40px;
+      }
+
+      .footer-animation-area {
+        align-items: center;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+      }
+
+      .features-section,
+      .how-section,
+      .integrations-section {
+        padding: 64px 24px;
+      }
+
+      .video-section,
+      .bottom-cta {
+        padding: 64px 24px;
+      }
+
+      .setup-section {
+        padding: 64px 24px;
+      }
+
+      .github-section {
+        padding: 64px 24px;
+      }
+
+      .chat-section {
+        padding: 40px 16px 64px;
+      }
+
+      .section-heading {
+        font-size: 32px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero-buttons {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .hero-buttons .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .integrations-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .footer-links-area {
+        flex-direction: column;
+        gap: 32px;
+      }
+
+      .nav-actions .btn-ghost {
+        display: none;
+      }
+    }
+
+    /* ========================================
+       SEO TOOLS COVERAGE SECTION
+       ======================================== */
+    .seo-tools-section {
+      background: #fff;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 100px 0;
+    }
+
+    .seo-tools-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 40px;
+      display: grid;
+      grid-template-columns: 35% 65%;
+      gap: 80px;
+      align-items: start;
+    }
+
+    .seo-tools-left {
+      position: sticky;
+      top: 90px;
+    }
+
+    .seo-tools-heading {
+      font-family: var(--font-display);
+      font-size: 48px;
+      font-weight: 400;
+      line-height: 1.1;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      margin: 16px 0 20px;
+    }
+
+    .seo-tools-desc {
+      font-family: var(--font-body);
+      font-size: 17px;
+      color: var(--text-secondary);
+      max-width: 340px;
+      line-height: 1.65;
+    }
+
+    .seo-category-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin: 28px 0 12px;
+      display: block;
+    }
+
+    .seo-category-label:first-child {
+      margin-top: 0;
+    }
+
+    .seo-features-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .seo-feature-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--text-primary);
+      position: relative;
+      overflow: hidden;
+      transition: box-shadow 0.2s, transform 0.2s;
+      cursor: default;
+    }
+
+    .seo-feature-card:hover {
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .card-accent {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      border-radius: 10px 0 0 10px;
+    }
+
+    .seo-tools-disclaimer {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 40px;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 0 40px;
+      line-height: 1.7;
+    }
+
+    /* ========================================
+       CREATOR / BUILT BY SECTION
+       ======================================== */
+    .creator-section {
+      background: var(--bg-primary);
+      padding: 120px 32px;
+      text-align: center;
+    }
+
+    .creator-section .section-label {
+      margin-bottom: 20px;
+    }
+
+    .creator-heading {
+      font-family: var(--font-display);
+      font-size: 52px;
+      font-weight: 400;
+      line-height: 1.1;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      margin-bottom: 24px;
+    }
+
+    .creator-subheading {
+      font-family: var(--font-body);
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 56px;
+      line-height: 1.65;
+    }
+
+    .creator-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px;
+      max-width: 680px;
+      margin: 0 auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.06);
+      text-align: center;
+    }
+
+    .creator-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--bg-dark);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0 auto 20px;
+      letter-spacing: -0.5px;
+    }
+
+    .creator-name {
+      font-family: var(--font-body);
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .creator-role {
+      font-family: var(--font-body);
+      font-size: 15px;
+      color: var(--text-secondary);
+      margin-bottom: 28px;
+    }
+
+    .creator-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 24px 0;
+    }
+
+    .creator-quote {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      text-align: left;
+    }
+
+    .spec-tags-label {
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-align: left;
+      margin-bottom: 12px;
+    }
+
+    .spec-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+
+    .spec-tag {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+
+    .spec-tag:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(75, 91, 245, 0.04);
+    }
+
+    .creator-powered {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 0;
+    }
+
+    .creator-portfolio-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: var(--bg-dark);
+      color: #fff;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 500;
+      border-radius: 12px;
+      padding: 16px 24px;
+      text-decoration: none;
+      margin-top: 24px;
+      transition: opacity 0.2s;
+    }
+
+    .creator-portfolio-btn:hover {
+      opacity: 0.85;
+    }
+
+    .creator-portfolio-url {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 10px;
+      display: block;
+    }
+
+    .creator-email-link {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 14px;
+      display: block;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .creator-email-link:hover {
+      color: var(--accent);
+    }
+
+    .creator-stats {
+      display: flex;
+      justify-content: center;
+      gap: 48px;
+      max-width: 580px;
+      margin: 48px auto 0;
+      flex-wrap: wrap;
+    }
+
+    .creator-stat {
+      text-align: center;
+    }
+
+    .creator-stat-num {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 400;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .creator-stat-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* ========================================
+       CUSTOM DATA SOURCE CALLOUT
+       ======================================== */
+    .custom-source-callout {
+      background: rgba(75, 91, 245, 0.04);
+      border: 1px solid rgba(75, 91, 245, 0.20);
+      border-left: 3px solid var(--accent);
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin-top: 32px;
+    }
+
+    .callout-header {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .callout-body {
+      font-family: var(--font-body);
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .callout-body strong {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .callout-examples {
+      margin-top: 16px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .callout-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 11px;
+      margin: 4px 4px 0 0;
+      background: white;
+      color: var(--text-secondary);
+    }
+
+    .callout-footer {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(75, 91, 245, 0.12);
+    }
+
+    /* ========================================
+       RESPONSIVE — NEW SECTIONS
+       ======================================== */
+    @media (max-width: 768px) {
+      .seo-tools-inner {
+        grid-template-columns: 1fr;
+        gap: 40px;
+        padding: 0 24px;
+      }
+
+      .seo-tools-left {
+        position: static;
+      }
+
+      .seo-tools-heading {
+        font-size: 36px;
+      }
+
+      .creator-heading {
+        font-size: 36px;
+      }
+
+      .creator-card {
+        padding: 32px 24px;
+      }
+
+      .creator-stats {
+        gap: 28px;
+      }
+
+      .seo-tools-section {
+        padding: 64px 0;
+      }
+
+      .creator-section {
+        padding: 80px 24px;
+      }
+    }
+  </style></div><div>
+
+  <div class="custom-cursor" id="customCursor"></div>
+
+  <!-- ==========================================
+       NAV BAR
+       ========================================== -->
+  <nav class="nav" id="navbar" role="navigation" aria-label="Main navigation">
+    <div class="nav-inner">
+
+      <a href="#" class="nav-logo" aria-label="SEO Agent Home">
+        <img src="/logo.png" alt="SEO Agent Logo" class="nav-logo-img">
+        SEO Agent
+      </a>
+
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#video">Video</a></li>
+        <li><a href="https://github.com/shekharpatel21/SEO-Agent" target="_blank" rel="noopener">GitHub <span class="ext-arrow">↗</span></a>
+        </li>
+        <li class="mobile-cta">
+          <a href="#setup" class="btn btn-ghost">Docs</a>
+          <a href="https://github.com/shekharpatel21/SEO-Agent" class="btn btn-accent" target="_blank" rel="noopener">Get Started →</a>
+        </li>
+      </ul>
+
+      <div class="nav-actions">
+        <a href="#setup" class="btn btn-ghost">Docs</a>
+        <a href="https://github.com/shekharpatel21/SEO-Agent" class="btn btn-accent" target="_blank" rel="noopener">Get Started →</a>
+      </div>
+
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="navLinks">
+        <span></span><span></span><span></span>
+      </button>
+
+    </div>
+  </nav>
+
+  <!-- ==========================================
+       HERO SECTION
+       ========================================== -->
+  <section class="hero" id="hero">
+
+    <!-- Background decoration -->
+    <svg class="hero-bg-pattern" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="400" cy="400" r="300" stroke="#1A1A16" stroke-width="1" />
+      <circle cx="400" cy="400" r="200" stroke="#1A1A16" stroke-width="0.5" />
+      <circle cx="400" cy="400" r="100" stroke="#1A1A16" stroke-width="0.5" />
+      <line x1="100" y1="400" x2="700" y2="400" stroke="#1A1A16" stroke-width="0.3" />
+      <line x1="400" y1="100" x2="400" y2="700" stroke="#1A1A16" stroke-width="0.3" />
+      <line x1="188" y1="188" x2="612" y2="612" stroke="#1A1A16" stroke-width="0.3" />
+      <line x1="612" y1="188" x2="188" y2="612" stroke="#1A1A16" stroke-width="0.3" />
+    </svg>
+
+    <div class="hero-content">
+      <!-- Floating Cursors -->
+      <div class="floating-cursor fc-indexer" id="fc-indexer">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5.5 3.5L18.5 10.5L12.5 12.5L10.5 18.5L5.5 3.5Z" fill="currentColor" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+        <div class="fc-label">RESEARCHER</div>
+      </div>
+      <div class="floating-cursor fc-ranker" id="fc-ranker">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5.5 3.5L18.5 10.5L12.5 12.5L10.5 18.5L5.5 3.5Z" fill="currentColor" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+        <div class="fc-label">ANALYZER</div>
+      </div>
+      <div class="floating-cursor fc-crawler" id="fc-crawler">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5.5 3.5L18.5 10.5L12.5 12.5L10.5 18.5L5.5 3.5Z" fill="currentColor" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+        <div class="fc-label">STRATEGIST</div>
+      </div>
+      <div class="floating-cursor fc-auditor" id="fc-auditor">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5.5 3.5L18.5 10.5L12.5 12.5L10.5 18.5L5.5 3.5Z" fill="currentColor" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+        <div class="fc-label">AUDITOR</div>
+      </div>
+
+      <p class="hero-label"> OPEN SOURCE · FREE · SELF-HOSTED</p>
+
+      <h1 class="hero-title" id="heroTitle">
+        <span class="word" style="animation-delay:0.15s">Build</span>
+        <span class="word" style="animation-delay:0.22s">your</span>
+        <span class="word" style="animation-delay:0.29s">own</span> </br>
+        <span class="word" style="animation-delay:0.36s">SEO</span>
+        <span class="word" style="animation-delay:0.43s">research</span>
+        <span class="word" style="animation-delay:0.50s">engine</span>
+        <br>
+        <span class="word italic" style="animation-delay:0.57s">not</span>
+        <span class="word italic" style="animation-delay:0.64s">another</span>
+        <span class="word italic" style="animation-delay:0.71s">tool.</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        Keyword research, SERP analysis, competitor insights &amp; content gaps.<br>
+        Powered by your own APIs and AI models. Deploy free on Vercel.
+      </p>
+
+      <div class="hero-buttons">
+        <a href="https://github.com/shekharpatel21/SEO-Agent" class="btn btn-outline-dark btn-large" target="_blank" rel="noopener">View on
+          GitHub</a>
+        <a href="https://vercel.com/" class="btn btn-accent btn-large" target="_blank" rel="noopener">Deploy to Vercel →</a>
+      </div>
+
+      <p class="hero-caption">MIT License · No signup required · Works with OpenAI, Gemini &amp; Claude</p>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       ANIMATED CHAT DEMO
+       ========================================== -->
+  <section class="chat-section" id="demo">
+    <p class="chat-section-label" data-animate>Live Demo</p>
+
+    <div class="chat-window" data-animate>
+      <div class="chat-messages" id="chatMessages">
+        <!-- Messages injected by JS -->
+      </div>
+      <div class="chat-input-area">
+        <button class="chat-input-plus" aria-label="Add attachment">+</button>
+        <div class="chat-input-field" id="chatInput"><span class="cursor-blink"></span></div>
+        <button class="chat-send-btn" aria-label="Send message">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+            stroke-linejoin="round">
+            <line x1="12" y1="19" x2="12" y2="5"></line>
+            <polyline points="5 12 12 5 19 12"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       STATS BAR
+       ========================================== -->
+  <section class="stats-bar" id="stats">
+    <div class="stats-grid">
+      <div class="stat-cell" data-animate>
+        <div class="stat-number">All-in-one</div>
+        <div class="stat-label">SEO data endpoints</div>
+      </div>
+      <div class="stat-cell" data-animate>
+        <div class="stat-number" data-count="3">0</div>
+        <div class="stat-label">AI providers · OpenAI · Gemini · Claude</div>
+      </div>
+      <div class="stat-cell" data-animate>
+        <div class="stat-number">$0<span style="font-size:24px;opacity:0.5;">/mo</span></div>
+        <div class="stat-label">No SaaS fee, self-hosted</div>
+      </div>
+      <div class="stat-cell" data-animate>
+        <div class="stat-number">MIT</div>
+        <div class="stat-label">Free forever, open source</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       FEATURE SECTIONS
+       ========================================== -->
+  <section class="features-section" id="features">
+
+    <!-- Feature #01 — Keyword Research -->
+    <div class="feature-block">
+      <div class="feature-left" data-animate="left">
+        <span class="feature-label accent">#01 — Keyword Research</span>
+        <h2 class="feature-heading">Keywords, SERP &amp; competitors.<br>All in one place.</h2>
+        <ul class="feature-list">
+          <li class="feature-item">
+            <div class="feature-item-title">Keyword Ideas</div>
+            <div class="feature-item-desc">Discover high-impact keyword opportunities with search volume, difficulty,
+              CPC, and intent.</div>
+          </li>
+          <li class="feature-item">
+            <div class="feature-item-title">SERP Analysis</div>
+            <div class="feature-item-desc">Understand exactly who ranks, why they rank, and how to beat them.</div>
+          </li>
+          <li class="feature-item">
+            <div class="feature-item-title">Related Keywords</div>
+            <div class="feature-item-desc">Build topical authority with semantically connected keyword clusters.</div>
+          </li>
+          <li class="feature-item">
+            <div class="feature-item-title">Competitor Keywords</div>
+            <div class="feature-item-desc">Uncover what your competitors rank for — and where you can win.</div>
+          </li>
+        </ul>
+      </div>
+      <div class="feature-right" data-animate="right">
+        <div class="code-block">{
+          <span class="ck">"keyword"</span>: <span class="cs">"ai video creator"</span>,
+          <span class="ck">"search_volume"</span>: <span class="cn">12100</span>,
+          <span class="ck">"difficulty"</span>: <span class="cn">42</span>,
+          <span class="ck">"cpc"</span>: <span class="cn">2.45</span>,
+          <span class="ck">"intent"</span>: <span class="cs">"commercial"</span>,
+          <span class="ck">"opportunity_score"</span>: <span class="cn">87</span>,
+          <span class="ck">"trend"</span>: <span class="cs">"↑ rising"</span>,
+          <span class="ck">"ranking_insight"</span>: <span class="cs">"Low competition + high intent"</span>,
+          <span class="ck">"serp_features"</span>: [
+          <span class="cs">"featured_snippet"</span>,
+          <span class="cs">"video_carousel"</span>,
+          <span class="cs">"people_also_ask"</span>
+          ],
+          <span class="ck">"recommended_action"</span>: <span class="cs">"Target as primary keyword with supporting
+            cluster"</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature #02 — AI Analysis -->
+    <div class="feature-block">
+      <div class="feature-left" data-animate="left">
+        <span class="feature-label green">#02 — AI Analysis</span>
+        <h2 class="feature-heading">Your AI. Your rules.<br>No vendor lock-in.</h2>
+        <ul class="feature-list">
+          <li class="feature-item">
+            <div class="feature-item-title">OpenAI</div>
+            <div class="feature-item-desc">Use GPT models for keyword analysis, clustering, and strategy.</div>
+          </li>
+          <li class="feature-item">
+            <div class="feature-item-title">Google Gemini</div>
+            <div class="feature-item-desc">Fast and cost-efficient analysis for large-scale workflows.</div>
+          </li>
+          <li class="feature-item">
+            <div class="feature-item-title">Anthropic Claude</div>
+            <div class="feature-item-desc">Deep reasoning for advanced SEO strategy and content planning.</div>
+          </li>
+          <li class="feature-item">
+            <div class="feature-item-title">Bring Your Own Key</div>
+            <div class="feature-item-desc">Connect your API keys — no middleman, no markup, full control.</div>
+          </li>
+        </ul>
+      </div>
+      <div class="feature-right" data-animate="right">
+        <div class="code-block"><span class="cc"># .env configuration</span>
+
+          <span class="ct">AI_PROVIDER</span>=<span class="cs">openai</span>
+          <span class="ct">AI_MODEL</span>=<span class="cs">gpt-4o</span>
+          <span class="ct">OPENAI_API_KEY</span>=<span class="cs">sk-••••••••••••</span>
+
+          <span class="cc"># Or switch to Gemini:</span>
+          <span class="ct">AI_PROVIDER</span>=<span class="cs">gemini</span>
+          <span class="ct">GEMINI_API_KEY</span>=<span class="cs">AIza••••••••••</span>
+
+          <span class="cc"># Or Claude:</span>
+          <span class="ct">AI_PROVIDER</span>=<span class="cs">anthropic</span>
+          <span class="ct">ANTHROPIC_API_KEY</span>=<span class="cs">sk-ant-••••</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature #03 — Self-Hosted Scraping -->
+    <div class="feature-block">
+      <div class="feature-left" data-animate="left">
+        <span class="feature-label coral">#03 — Self-Hosted Scraping</span>
+        <h2 class="feature-heading">No Firecrawl needed.<br>Sniffhunt does it free.</h2>
+        <ul class="feature-list">
+          <li class="feature-item">
+            <div class="feature-item-title">Sniffhunt Scraper</div>
+            <div class="feature-item-desc">Open-source browser scraping — no API costs, no limits.</div>
+          </li>
+          <li class="feature-item">
+            <div class="feature-item-title">Beast Mode</div>
+            <div class="feature-item-desc">Full headless rendering for JS-heavy, dynamic, and interactive websites.
+            </div>
+          </li>
+          <li class="feature-item">
+            <div class="feature-item-title">Internal Links</div>
+            <div class="feature-item-desc">Extract site structure, internal links, and sitemap data automatically.</div>
+          </li>
+          <li class="feature-item">
+            <div class="feature-item-title">Self-Hosted</div>
+            <div class="feature-item-desc">Run it on your own server. Your data stays yours.</div>
+          </li>
+        </ul>
+      </div>
+      <div class="feature-right" data-animate="right">
+        <div class="terminal-block"><span class="prompt">$</span> <span class="cmd">curl -X POST
+            http://localhost:8080/scrape-sync</span> <span class="flag">\</span>
+          <span class="flag">-H</span> <span class="str">"Content-Type: application/json"</span> <span
+            class="flag">\</span>
+          <span class="flag">-d</span> <span class="str">'{"url": "https://competitor.com", "mode": "beast"}'</span>
+
+          <span class="success">✅ Scraping completed in 3.2s</span>
+          <span class="info">📄 Extracted 47 internal links</span>
+          <span class="info">📝 Markdown: 12,450 characters</span>
+          <span class="info">🔗 Sitemap nodes: 23</span>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ==========================================
+       SEO TOOLS COVERAGE SECTION
+       ========================================== -->
+  <section class="seo-tools-section" id="seo-coverage">
+    <div class="seo-tools-inner">
+
+      <!-- Left: Heading Column -->
+      <div class="seo-tools-left" data-animate="left">
+        <p class="section-label">What It Covers</p>
+        <h2 class="seo-tools-heading">Every SEO workflow.<br><em>One agent.</em></h2>
+        <p class="seo-tools-desc">Enterprise-level SEO capabilities — at Zero monthly cost. Use any data source. Connect
+          your own APIs. Full control.</p>
+      </div>
+
+      <!-- Right: Tools Grid -->
+      <div data-animate="right">
+
+        <span class="seo-category-label">Site Performance</span>
+        <div class="seo-features-grid">
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#4B5BF5"></div><span>🔍</span><span class="card-name">Site
+              Audit</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#4B5BF5"></div><span>📍</span><span class="card-name">Position
+              Tracking</span>
+          </div>
+        </div>
+
+        <span class="seo-category-label">Competitive Analysis</span>
+        <div class="seo-features-grid">
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#E85D3F"></div><span>🌐</span><span class="card-name">Domain
+              Overview</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#E85D3F"></div><span>📈</span><span class="card-name">Organic
+              Rankings</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#E85D3F"></div><span>📄</span><span class="card-name">Top
+              Pages</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#E85D3F"></div><span>⚖️</span><span class="card-name">Compare
+              Domains</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#E85D3F"></div><span>🕳️</span><span class="card-name">Keyword
+              Gap</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#E85D3F"></div><span>🔗</span><span class="card-name">Backlink
+              Gap</span>
+          </div>
+        </div>
+
+        <span class="seo-category-label">Keyword Research</span>
+        <div class="seo-features-grid">
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#22C55E"></div><span>🔑</span><span class="card-name">Keyword
+              Overview</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#22C55E"></div><span>✨</span><span class="card-name">Keyword
+              Magic Tool</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#22C55E"></div><span>🗺️</span><span class="card-name">Keyword
+              Strategy Builder</span>
+          </div>
+        </div>
+
+        <span class="seo-category-label">Content Ideas</span>
+        <div class="seo-features-grid">
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#F59E0B"></div><span>✍️</span><span class="card-name">SEO Writing
+              Assistant</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#F59E0B"></div><span>💡</span><span class="card-name">Topic
+              Research</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#F59E0B"></div><span>📋</span><span class="card-name">SEO Content
+              Template</span>
+          </div>
+        </div>
+
+        <span class="seo-category-label">Link Building</span>
+        <div class="seo-features-grid">
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#8B5CF6"></div><span>🔗</span><span
+              class="card-name">Backlinks</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#8B5CF6"></div><span>🌍</span><span class="card-name">Referring
+              Domains</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#8B5CF6"></div><span>🛡️</span><span class="card-name">Backlink
+              Audit</span>
+          </div>
+        </div>
+
+        <span class="seo-category-label">Extras</span>
+        <div class="seo-features-grid">
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#6B6B60"></div><span>📡</span><span
+              class="card-name">Sensor</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#6B6B60"></div><span>⚡</span><span
+              class="card-name">SEOquake</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#6B6B60"></div><span>🏆</span><span class="card-name">Semrush
+              Rank</span>
+          </div>
+        </div>
+
+        <span class="seo-category-label">Other</span>
+        <div class="seo-features-grid">
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#0D9488"></div><span>✅</span><span class="card-name">On Page SEO
+              Checker</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#0D9488"></div><span>👁️</span><span class="card-name">Organic
+              Traffic Insights</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#0D9488"></div><span>🏗️</span><span class="card-name">Link
+              Building</span>
+          </div>
+          <div class="seo-feature-card">
+            <div class="card-accent" style="background:#0D9488"></div><span>📂</span><span class="card-name">Log File
+              Analyzer</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <p class="seo-tools-disclaimer" data-animate>* Covers the same SEO workflows as enterprise platforms.<br>Works with
+      your own data sources and APIs.</p>
+  </section>
+
+  <!-- ==========================================
+       HOW IT WORKS
+       ========================================== -->
+  <section class="how-section" id="how-it-works">
+    <div class="how-header" data-animate>
+      <p class="section-label">How It Works</p>
+      <h2 class="section-heading">From question to<br><span class="italic">keyword strategy</span> in seconds.</h2>
+    </div>
+
+    <div class="how-steps">
+      <div class="how-step" data-animate style="transition-delay: 0s;">
+        <div class="how-step-bg-number">1</div>
+        <div class="how-step-circle">01</div>
+        <h3 class="how-step-title">Ask</h3>
+        <p class="how-step-desc">Describe your keyword research request in plain English — no complex queries.
+        </p>
+        <span class="how-step-arrow">→</span>
+      </div>
+      <div class="how-step" data-animate style="transition-delay: 0.2s;">
+        <div class="how-step-bg-number">2</div>
+        <div class="how-step-circle">02</div>
+        <h3 class="how-step-title">Analyze</h3>
+        <p class="how-step-desc">The agent gathers data, analyzes competitors, and processes everything using your APIs.
+        </p>
+        <span class="how-step-arrow">→</span>
+      </div>
+      <div class="how-step" data-animate style="transition-delay: 0.4s;">
+        <div class="how-step-bg-number">3</div>
+        <div class="how-step-circle">03</div>
+        <h3 class="how-step-title">Report</h3>
+        <p class="how-step-desc">Get a structured SEO report with insights, metrics, and clear action steps.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       YOUTUBE VIDEO SECTION
+       ========================================== -->
+  <!--
+    YOUTUBE VIDEO PLACEHOLDER
+    After uploading your tutorial video to YouTube:
+    1. Copy the video ID from the URL: youtube.com/watch?v=VIDEO_ID_HERE
+    2. Replace YOUR_YOUTUBE_VIDEO_ID in the iframe src below
+    3. The video will automatically embed with the correct styling
+  -->
+  <section class="video-section" id="video">
+    <div class="video-header" data-animate>
+      <p class="section-label">Watch the Tutorial</p>
+      <h2 class="section-heading">See it built from scratch.<br><span class="italic">Step by step.</span></h2>
+      <p class="video-subtitle">Full walkthrough — from entering a simple query to analyzing data, exploring
+        competitors, and generating a complete SEO strategy in seconds.</p>
+    </div>
+
+    <div class="video-wrapper" data-animate>
+      <!-- Replace YOUR_YOUTUBE_VIDEO_ID below with your actual YouTube video ID -->
+      <iframe src="https://www.youtube.com/embed/90507I5ARZE?rel=0&modestbranding=1&color=white"
+        title="SEO Keyword Agent Tutorial"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen
+        loading="lazy" id="ytIframe"></iframe>
+
+    </div>
+
+    <p class="video-caption" data-animate>16 min · Full setup included · Free to follow along</p>
+  </section>
+
+  <!-- ==========================================
+       GITHUB / OPEN SOURCE SECTION
+       ========================================== -->
+  <section class="github-section" id="github">
+    <div class="github-grid">
+
+      <div class="github-text" data-animate="left">
+        <p class="section-label">Open Source</p>
+        <h2 class="section-heading">Free forever.<br>Fork it. Ship it.<br>Make it yours.</h2>
+        <p class="github-desc">This is not a SaaS product. There are no monthly fees, no contact limits, no vendor
+          lock-in. Download the code, add your API keys, and deploy in 5 minutes.</p>
+        <div class="github-buttons">
+          <a href="https://github.com/shekharpatel21/SEO-Agent" class="btn btn-accent btn-large" target="_blank" rel="noopener">
+            ★ Star on GitHub
+          </a>
+          <span class="btn-sub">github.com/YOUR_USERNAME/seo-keyword-agent</span>
+          <a href="https://github.com/shekharpatel21/SEO-Agent/archive/refs/heads/main.zip" class="btn btn-outline-dark btn-large"
+            style="margin-top:8px;">
+            ↓ Download ZIP
+          </a>
+          <span class="btn-sub">Latest release · MIT License</span>
+        </div>
+      </div>
+
+      <div data-animate="right">
+        <div class="gh-card" id="ghCard">
+          <div class="gh-card-header">
+            <svg class="gh-card-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+            </svg>
+            <span class="gh-card-name">seo-keyword-agent</span>
+          </div>
+          <div class="gh-card-user">shekharpatel21/seo-agent</div>
+          <div class="gh-card-desc">Open-source SEO research agent powered by your own data sources and AI models.</div>
+
+          <div class="gh-card-divider"></div>
+
+          <div class="gh-card-stats">
+            <span class="gh-card-stat-label">★ Stars <span class="gh-card-stat-value">—</span></span>
+            <span class="gh-card-stat-label">🍴 Forks <span class="gh-card-stat-value">—</span></span>
+          </div>
+
+          <div class="gh-card-divider"></div>
+
+          <div class="gh-card-tags">
+            <span class="gh-card-tag">JavaScript</span>
+            <span class="gh-card-tag">TypeScript</span>
+            <span class="gh-card-tag">HTML</span>
+            <span class="gh-card-tag">Dockerfile</span>
+            <span class="gh-card-tag">MIT</span>
+          </div>
+
+          <div class="gh-card-cmd">npx create-next-app@latest \<br> --example seo-keyword-agent</div>
+
+          <a href="https://github.com/shekharpatel21/SEO-Agent" class="gh-card-btn" target="_blank" rel="noopener">View Repository →</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==========================================
+       CREATOR / BUILT BY SECTION
+       ========================================== -->
+  <section class="creator-section" id="creator">
+
+    <p class="section-label" data-animate>Built By</p>
+    <h2 class="creator-heading" data-animate>A developer who builds<br><em>AI agents for a living.</em></h2>
+    <p class="creator-subheading" data-animate>This tool wasn't built in a weekend hackathon. It was crafted by a
+      specialist who builds custom AI systems and automation workflows for real businesses — every day.</p>
+
+    <div class="creator-card" data-animate>
+
+      <div class="creator-avatar">SP</div>
+      <div class="creator-name">Shekhar Patel</div>
+      <div class="creator-role">AI Agent Developer, Automation Specialist &amp; Digital Marketer</div>
+
+      <div class="creator-divider"></div>
+
+      <p class="creator-quote">&ldquo;I&rsquo;ve spent months building and testing AI agents across real marketing
+        workflows. Every system I deliver is hand-crafted, not copy-pasted. This open-source SEO agent is built the same
+        way.&rdquo;</p>
+
+      <div class="creator-divider"></div>
+
+      <div class="spec-tags-label">Specializes in:</div>
+      <div class="spec-tags">
+        <span class="spec-tag">Custom AI Agents</span>
+        <span class="spec-tag">Workflow Automation</span>
+        <span class="spec-tag">Sales &amp; CRM Agents</span>
+        <span class="spec-tag">Content Agents</span>
+        <span class="spec-tag">Slack Integration</span>
+        <span class="spec-tag">SEO Automation</span>
+        <span class="spec-tag">Data &amp; Insights</span>
+        <span class="spec-tag">Marketing Automation</span>
+      </div>
+
+      <div class="creator-divider"></div>
+
+      <p class="creator-powered">Powered by: Claude · OpenAI · Next.js · Python · LangChain</p>
+
+      <a href="https://aiagentautomation.vercel.app/" class="creator-portfolio-btn" target="_blank"
+        rel="noopener noreferrer">
+        <span>Visit Portfolio &amp; Services ↗</span>
+        <span style="font-family:var(--font-mono);font-size:11px;opacity:0.5;">aiagentautomation.vercel.app</span>
+      </a>
+      <span class="creator-portfolio-url">Custom AI Agents for Any Business Workflow.
+        Built to Automate What You Need.</span>
+
+      <a href="mailto:shekharpatel2221@gmail.com" class="creator-email-link">Have a custom AI project?
+        shekharpatel2221@gmail.com →</a>
+
+    </div>
+
+    <div class="creator-stats" data-animate>
+      <div class="creator-stat">
+        <div class="creator-stat-num">50+</div>
+        <div class="creator-stat-label">Custom AI Agents<br>Built &amp; Delivered</div>
+      </div>
+      <div class="creator-stat">
+        <div class="creator-stat-num">100+</div>
+        <div class="creator-stat-label">Workflow Systems<br>Automated</div>
+      </div>
+      <div class="creator-stat">
+        <div class="creator-stat-num">30+</div>
+        <div class="creator-stat-label">Happy Clients<br>Across Industries</div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ==========================================
+       SETUP / ENV KEYS SECTION
+       ========================================== -->
+  <section class="setup-section" id="setup">
+    <div class="setup-grid">
+
+      <div data-animate="left">
+        <p class="section-label">Setup in 5 Minutes</p>
+        <h2 class="section-heading">Three APIs.<br>One .env file.<br>Done.</h2>
+        <ul class="setup-list">
+          <li><span class="check">✓</span> Data source — connect any keyword or analytics API</li>
+          <li><span class="check">✓</span> AI model — use OpenAI, Gemini, Claude, or any provider</li>
+          <li><span class="check">✓</span> Scraper — optional self-hosted data extraction</li>
+          <li><span class="check">✓</span> Deployment — run locally or deploy anywhere</li>
+        </ul>
+      </div>
+
+      <div data-animate="right">
+        <div class="setup-tabs">
+          <div class="setup-tab-bar">
+            <button class="setup-tab-btn active" data-tab="tab-dataforseo">Data Source</button>
+            <button class="setup-tab-btn" data-tab="tab-ai">AI Provider</button>
+            <button class="setup-tab-btn" data-tab="tab-sniffhunt">Sniffhunt</button>
+          </div>
+          <div class="setup-tab-content">
+            <div class="setup-tab-panel active" id="tab-dataforseo"><span class="cc"># Connect your data source API
+                Use any provider or your own backend</span>
+
+              <span class="ck">DATA_SOURCE_USERNAME</span>=<span class="cv">your_username</span>
+              <span class="ck">DATA_SOURCE_PASSWORD</span>=<span class="cv">your_password</span>
+            </div>
+
+            <div class="setup-tab-panel" id="tab-ai"><span class="cc"># Choose your AI provider</span>
+
+              <span class="ck">AI_PROVIDER</span>=<span class="cv">openai</span> <span class="cc"># openai | gemini |
+                anthropic</span>
+              <span class="ck">AI_MODEL</span>=<span class="cv">gpt-4o</span>
+              <span class="ck">OPENAI_API_KEY</span>=<span class="cv">sk-...</span>
+
+              <span class="cc"># Or for Gemini:</span>
+              <span class="ck">GEMINI_API_KEY</span>=<span class="cv">AIza...</span>
+
+              <span class="cc"># Or for Claude:</span>
+              <span class="ck">ANTHROPIC_API_KEY</span>=<span class="cv">sk-ant-...</span>
+            </div>
+
+            <div class="setup-tab-panel" id="tab-sniffhunt"><span class="cc"># run your own scraping engine</span>
+              <span class="cc"># github.com/MpMeetPatel/sniffhunt-scraper</span>
+
+              <span class="ck">SNIFFHUNT_URL</span>=<span class="cv">http://localhost:8080</span>
+              <span class="ck">SNIFFHUNT_GEMINI_KEY</span>=<span class="cv">AIza...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom Data Source Callout -->
+        <div class="custom-source-callout">
+          <div class="callout-header">⚡ Not Locked to DataForSEO</div>
+          <div class="callout-body">
+            This agent works with any data source- <strong>connect your own APIs or backend.</strong>.<br><br>
+            You can configure endpoints in the backend route files.
+            As long as the data is structured correctly, it just works.
+          </div>
+          <div class="callout-examples">
+            Works with:
+            <div style="margin-top:10px;">
+              <span class="callout-pill">Any data source ✓</span>
+              <span class="callout-pill">Custom REST API</span>
+              <span class="callout-pill">Your own scraper</span>
+              <span class="callout-pill">Any JSON endpoint</span>
+              <span class="callout-pill">Private data source</span>
+            </div>
+          </div>
+          <div class="callout-footer">→ See /lib/data.ts to configure your own data source endpoint.</div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==========================================
+       INTEGRATIONS / PLATFORMS
+       ========================================== -->
+  <section class="integrations-section" id="integrations">
+    <div class="integrations-header" data-animate>
+      <p class="section-label">Connect Anywhere</p>
+      <h2 class="section-heading">Works with your<br>favorite platform.</h2>
+    </div>
+
+    <div class="integrations-grid" data-animate>
+      <a href="https://slack.com" class="integration-cell" target="_blank" rel="noopener">
+        <div class="integration-icon">
+          <img src="/icons/slack.png" alt="Slack" />
+        </div>
+        <span class="integration-name">Slack <span class="integration-arrow">↗</span></span>
+      </a>
+      <a href="https://vercel.com" class="integration-cell" target="_blank" rel="noopener">
+        <div class="integration-icon">
+          <img src="/icons/vercel.svg" alt="Vercel" />
+        </div>
+        <span class="integration-name">Vercel <span class="integration-arrow">↗</span></span>
+      </a>
+      <a href="https://n8n.io" class="integration-cell" target="_blank" rel="noopener">
+        <div class="integration-icon">
+          <img src="/icons/n8n.webp" alt="N8N" />
+        </div>
+        <span class="integration-name">N8N <span class="integration-arrow">↗</span></span>
+      </a>
+      <a href="https://zapier.com" class="integration-cell" target="_blank" rel="noopener">
+        <div class="integration-icon">
+          <img src="/icons/zapier.svg" alt="Zapier" />
+        </div>
+        <span class="integration-name">Zapier <span class="integration-arrow">↗</span></span>
+      </a>
+      <a href="https://openai.com" class="integration-cell" target="_blank" rel="noopener">
+        <div class="integration-icon">
+          <img src="/icons/openai.svg" alt="OpenAI" />
+        </div>
+        <span class="integration-name">OpenAI <span class="integration-arrow">↗</span></span>
+      </a>
+      <a href="https://gemini.google.com" class="integration-cell" target="_blank" rel="noopener">
+        <div class="integration-icon">
+          <img src="/icons/gemini.webp" alt="Gemini" />
+        </div>
+        <span class="integration-name">Gemini <span class="integration-arrow">↗</span></span>
+      </a>
+      <a href="https://claude.ai" class="integration-cell" target="_blank" rel="noopener">
+        <div class="integration-icon">
+          <img src="/icons/claude.svg" alt="Claude" />
+        </div>
+        <span class="integration-name">Claude <span class="integration-arrow">↗</span></span>
+      </a>
+      <a href="https://gist.github.com/webhooks" class="integration-cell" target="_blank" rel="noopener">
+        <div class="integration-icon">
+          <img src="/icons/webhooks.svg" alt="Webhooks" />
+        </div>
+        <span class="integration-name">Webhooks <span class="integration-arrow">↗</span></span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       BOTTOM CTA (DARK)
+       ========================================== -->
+  <section class="bottom-cta" id="cta">
+    <p class="section-label" data-animate>Get Started Today</p>
+    <h2 class="section-heading" data-animate>Your own SEO agent.<br>No subscriptions.</h2>
+    <p class="bottom-cta-subtitle" data-animate>Fork the repo, add your API keys, and run it anywhere. Up and running in
+      minutes.
+    </p>
+
+    <div class="cta-boxes" data-animate>
+      <div class="cta-box">
+        <div class="cta-box-num">01.</div>
+        <div class="cta-box-title">Fork</div>
+        <div class="cta-box-desc">Clone / Fork the repository to your own workspace.</div>
+      </div>
+      <div class="cta-box">
+        <div class="cta-box-num">02.</div>
+        <div class="cta-box-title">Configure</div>
+        <div class="cta-box-desc">Add your API keys in <code>.env.local</code> — quick and simple.</div>
+      </div>
+      <div class="cta-box">
+        <div class="cta-box-num">03.</div>
+        <div class="cta-box-title">Deploy</div>
+        <div class="cta-box-desc">Start locally or deploy anywhere. You're live. Done.</div>
+      </div>
+    </div>
+
+    <a href="https://github.com/shekharpatel21/SEO-Agent" class="btn btn-accent btn-xl" target="_blank" rel="noopener" data-animate>Get Started →</a>
+    <p class="bottom-cta-caption" data-animate>MIT License · Open Source · Free Forever</p>
+  </section>
+
+  <!-- ==========================================
+       FOOTER
+       ========================================== -->
+  <footer class="footer" id="footer" role="contentinfo">
+    <div class="footer-grid">
+      <div class="footer-links-area">
+        <div>
+          <h4 class="footer-col-title">Product</h4>
+          <ul class="footer-col-links">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
+            <li><a href="#setup">Setup Guide</a></li>
+            <li><a href="https://github.com/shekharpatel21">GitHub</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Legal</h4>
+          <ul class="footer-col-links">
+            <li><a href="javascript:void(0)" id="openLicense">License</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-animation-area">
+        <img src="https://theagrobrothers.com/home-page-footer-animation.gif" alt="SEO Agent Branding" class="footer-gif"
+          loading="lazy">
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-bottom-left">
+        <svg width="16" height="16" viewBox="0 0 28 28" fill="none">
+          <rect x="2" y="2" width="10" height="10" rx="2" fill="#666" />
+          <rect x="16" y="2" width="10" height="10" rx="2" fill="#666" opacity="0.6" />
+          <rect x="2" y="16" width="10" height="10" rx="2" fill="#666" opacity="0.6" />
+          <rect x="16" y="16" width="10" height="10" rx="2" fill="#4B5BF5" />
+        </svg>
+        SEO Agent · © 2026 · Open Source Project
+      </div>
+      <div class="footer-bottom-center">
+        <span class="footer-status-dot"></span>
+        All Systems Operational
+      </div>
+      <div class="footer-bottom-right">
+        <!-- GitHub -->
+        <a href="https://github.com/shekharpatel21" class="footer-social" aria-label="GitHub" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+          </svg>
+        </a>
+        <!-- Twitter/X -->
+        <a href="https://x.com/theshekharpatel" class="footer-social" aria-label="Twitter" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          </svg>
+        </a>
+        <!-- LinkedIn -->
+        <a href="https://www.linkedin.com/in/shekhar-patel-940324352/" class="footer-social" aria-label="LinkedIn" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==========================================
+       JAVASCRIPT — ALL INTERACTIONS
+       ========================================== -->
+  
+
+  <!-- ==========================================
+       LICENSE MODAL
+       ========================================== -->
+  <div class="modal-overlay" id="licenseModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title">Project License</div>
+        <button class="modal-close" id="closeLicense" aria-label="Close modal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">SEO Agent License (Personal & Commercial Restricted)
+
+Copyright (c) 2026 Shekhar Patel
+
+Permission is hereby granted to any person obtaining a copy
+of this software and associated documentation files (the "Software"),
+to use, copy, and modify the Software for personal, educational,
+and non-commercial purposes, subject to the following conditions:
+
+Permitted Uses:
+- Personal use and experimentation
+- Educational and research purposes
+- Internal evaluation and testing
+
+Restrictions:
+You may NOT:
+- Use the Software for any commercial purpose
+- Sell, sublicense, or monetize the Software
+- Offer the Software as a hosted service (SaaS)
+- Integrate the Software into commercial products
+- Use the Software in any revenue-generating activity
+
+Modification:
+- You may modify the Software for personal use only
+- You may NOT distribute modified versions publicly
+
+Redistribution:
+- Redistribution of the Software, modified or unmodified,
+  is not permitted without explicit permission
+
+Attribution:
+- This copyright notice must be included in all copies
+
+Commercial Licensing:
+For commercial usage rights, licensing, or partnerships,
+contact: your-email@example.com
+
+Disclaimer:
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY.</div>
+    </div>
+  </div>
+
+</body>
+
+</html>
